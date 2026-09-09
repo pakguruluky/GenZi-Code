@@ -84,9 +84,9 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ student: pro
     .cert-desc { font-size: 14px; color: #334155; max-width: 750px; margin: 0 auto 25px; line-height: 1.6; }
     .competency-tags { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; font-family: sans-serif; font-size: 12px; font-weight: bold; }
     .tag { padding: 6px 14px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f1f5f9; }
-    .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
-    .sign-box { width: 220px; text-align: center; }
-    .sign-name { font-size: 20px; font-style: italic; color: #1e293b; margin-bottom: 8px; font-weight: bold; }
+    .signatures { display: flex; justify-content: space-around; align-items: flex-end; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+    .sign-box { width: 240px; text-align: center; }
+    .sign-name { font-size: 22px; font-style: italic; color: #1e293b; margin-bottom: 8px; font-weight: bold; font-family: serif; }
     .sign-title { font-size: 11px; color: #64748b; border-top: 1px solid #94a3b8; padding-top: 4px; }
     .seal { width: 85px; height: 85px; border-radius: 50%; background: radial-gradient(circle, #f59e0b, #d97706); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 3px dashed white; box-shadow: 0 4px 10px rgba(217,119,6,0.4); margin: 0 auto; }
     .seal span { font-size: 8px; font-weight: bold; letter-spacing: 1px; }
@@ -109,10 +109,6 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ student: pro
     </div>
     <div class="signatures">
       <div class="sign-box">
-        <div class="sign-name">Pak Guru Luky</div>
-        <div class="sign-title"><strong>Pak Guru Luky</strong><br>Kepala Instruktur & Founder</div>
-      </div>
-      <div class="sign-box">
         <div class="seal">
           <span>GENZI CODE</span>
           <span style="font-size:10px; font-weight:900;">OFFICIAL</span>
@@ -121,8 +117,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ student: pro
         <div style="font-size: 10px; color: #64748b; margin-top: 6px;">Tanggal: ${issueDate}</div>
       </div>
       <div class="sign-box">
-        <div class="sign-name">Dimas Ardiansyah</div>
-        <div class="sign-title"><strong>Dimas Ardiansyah, S.Kom.</strong><br>Kepala Kurikulum & Pembimbing</div>
+        <div class="sign-name">Pak Guru Luky</div>
+        <div class="sign-title"><strong>Pak Guru Luky</strong><br>Kepala Instruktur & Founder</div>
       </div>
     </div>
   </div>
@@ -268,22 +264,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ student: pro
             </div>
 
             {/* Signatures & Verification Seal */}
-            <div className="mt-10 pt-6 border-t border-slate-200 flex items-end justify-between gap-4 relative z-10">
-              {/* Left Signatory: Pak Guru Luky */}
-              <div className="text-center w-48">
-                <div className="h-14 flex items-center justify-center">
-                  {/* Digital Signature Stylized */}
-                  <span className="font-serif italic font-bold text-lg text-indigo-900 tracking-wider">
-                    Pak Guru Luky
-                  </span>
-                </div>
-                <div className="border-t border-slate-400 pt-1">
-                  <p className="font-bold text-xs text-slate-900">Pak Guru Luky</p>
-                  <p className="text-[10px] text-slate-500">Kepala Instruktur & Founder</p>
-                </div>
-              </div>
-
-              {/* Center Official Gold Seal */}
+            <div className="mt-10 pt-6 border-t border-slate-200 flex items-end justify-around gap-6 relative z-10">
+              {/* Official Gold Seal */}
               <div className="text-center flex flex-col items-center">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-300 p-1 shadow-md flex items-center justify-center text-white relative">
                   <div className="w-full h-full rounded-full border-2 border-dashed border-white/80 flex flex-col items-center justify-center p-1 bg-amber-600/90 text-center">
@@ -301,23 +283,24 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ student: pro
                 </span>
               </div>
 
-              {/* Right Signatory: Instruktur Resmi */}
-              <div className="text-center w-48">
+              {/* Sole Signatory: Pak Guru Luky */}
+              <div className="text-center w-56">
                 <div className="h-14 flex items-center justify-center">
-                  <span className="font-serif italic font-semibold text-base text-slate-800">
-                    Dimas Ardiansyah, S.Kom.
+                  {/* Digital Signature Stylized */}
+                  <span className="font-serif italic font-bold text-xl text-indigo-900 tracking-wider">
+                    Pak Guru Luky
                   </span>
                 </div>
                 <div className="border-t border-slate-400 pt-1">
-                  <p className="font-bold text-xs text-slate-900">Dimas Ardiansyah, S.Kom.</p>
-                  <p className="text-[10px] text-slate-500">Kepala Kurikulum & Instruktur</p>
+                  <p className="font-bold text-sm text-slate-900">Pak Guru Luky</p>
+                  <p className="text-[11px] text-slate-500 font-medium">Kepala Instruktur & Founder</p>
                 </div>
               </div>
             </div>
 
             {/* Footer Notice */}
             <div className="mt-6 text-center text-[9px] text-slate-400 font-mono">
-              Verifikasi keaslian sertifikat ini dapat dicek melalui portal GenZi Code • @copyright by. Pak GuruAI
+              Verifikasi keaslian sertifikat ini dapat dicek melalui portal GenZi Code • @copyright by. Pak Guru Luky
             </div>
           </div>
         </div>

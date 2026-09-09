@@ -3,6 +3,11 @@ import { ALL_MATERIALS } from '../data/curriculumData';
 import { Material, MaterialCategory } from '../types';
 import { useApp } from '../context/AppContext';
 import {
+  useNetworkStatus,
+  getOfflineMaterials,
+  isOfflineMaterialCached
+} from '../utils/offlineStorage';
+import {
   CheckCircle2,
   Lock,
   Play,
@@ -16,7 +21,10 @@ import {
   Award,
   Unlock,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  WifiOff,
+  BookmarkCheck,
+  HardDrive
 } from 'lucide-react';
 
 interface LearningPathProps {
@@ -37,6 +45,7 @@ export const LearningPath: React.FC<LearningPathProps> = ({
     setViewingReportUser
   } = useApp();
 
+  const isOnline = useNetworkStatus();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,11 +53,17 @@ export const LearningPath: React.FC<LearningPathProps> = ({
   const completionPercent = getCompletionPercentage(currentUser);
   const completedCount = currentUser?.completedMaterialIds?.length || 0;
 
+  const offlineSavedList = getOfflineMaterials();
+  const offlineIds = new Set(offlineSavedList.map(o => o.id));
+
   // Filter materials
   const filteredMaterials = ALL_MATERIALS.filter(m => {
-    if (selectedCategory !== 'all' && m.category !== selectedCategory) {
+    if (selectedCategory === 'saved_offline') {
+      if (!offlineIds.has(m.id)) return false;
+    } else if (selectedCategory !== 'all' && m.category !== selectedCategory) {
       return false;
     }
+
     if (selectedLevel !== 'all') {
       if (selectedLevel === 'Level 1' && !m.level.includes('Level 1')) return false;
       if (selectedLevel === 'Level 2' && m.level !== 'Level 2') return false;
@@ -71,6 +86,31 @@ export const LearningPath: React.FC<LearningPathProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Offline Status Alert if disconnected */}
+      {!isOnline && (
+        <div className="rounded-2xl bg-amber-500/15 border border-amber-400 dark:border-amber-600 p-4 sm:p-5 flex items-start sm:items-center justify-between gap-4 text-amber-900 dark:text-amber-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <WifiOff className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold">Koneksi Internet Sedang Terputus (Mode Offline)</h4>
+              <p className="text-xs text-amber-800 dark:text-amber-300">
+                Anda tetap dapat membaca ringkasan materi {offlineSavedList.length > 0 ? `(${offlineSavedList.length} modul telah tersimpan)` : ''} dan berlatih koding secara lokal.
+              </p>
+            </div>
+          </div>
+          {offlineSavedList.length > 0 && (
+            <button
+              onClick={() => setSelectedCategory('saved_offline')}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shrink-0 transition-colors shadow-xs"
+            >
+              Lihat Materi Offline
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Learning Journey Hero & Progress Banner */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -142,6 +182,7 @@ export const LearningPath: React.FC<LearningPathProps> = ({
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
             {[
               { id: 'all', label: 'Semua Modul (54)' },
+              { id: 'saved_offline', label: `💾 Tersimpan Offline (${offlineSavedList.length})` },
               { id: 'Scratch', label: 'Scratch' },
               { id: 'Pictoblox', label: 'PictoBlox AI' },
               { id: 'MakeCode Arcade', label: 'MakeCode / Micro:bit' },
@@ -238,20 +279,32 @@ export const LearningPath: React.FC<LearningPathProps> = ({
                     </span>
                   </div>
 
-                  <span
-                    className={`flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
-                      material.type === 'Video'
-                        ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    {material.type === 'Video' ? (
-                      <Video className="w-3 h-3" />
-                    ) : (
-                      <FileText className="w-3 h-3" />
+                  <div className="flex items-center gap-1.5">
+                    {offlineIds.has(material.id) && (
+                      <span
+                        title="Tersimpan untuk dibaca offline"
+                        className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                      >
+                        <BookmarkCheck className="w-3 h-3 text-emerald-600" />
+                        <span className="hidden sm:inline">Offline</span>
+                      </span>
                     )}
-                    {material.type}
-                  </span>
+
+                    <span
+                      className={`flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                        material.type === 'Video'
+                          ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {material.type === 'Video' ? (
+                        <Video className="w-3 h-3" />
+                      ) : (
+                        <FileText className="w-3 h-3" />
+                      )}
+                      {material.type}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Title */}

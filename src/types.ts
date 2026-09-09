@@ -24,6 +24,8 @@ export interface UserAccount {
   duration?: SubscriptionDuration;
   activatedAt?: string;
   expiresAt?: string; // ISO date string when access expires, calculated from activatedAt + duration
+  lastLoginAt?: string; // ISO date string of current login
+  previousLoginAt?: string; // ISO date string of previous login for daily motivation check (>24h)
 }
 
 export type MaterialType = 'PDF' | 'Video';

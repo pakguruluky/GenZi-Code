@@ -25,6 +25,8 @@ import {
 import { DURATION_OPTIONS } from '../utils/subscription';
 import { CurriculumShowcase } from './CurriculumShowcase';
 import { StudentProgressBar } from './StudentProgressBar';
+import { DailyMotivationBanner } from './DailyMotivationBanner';
+import { useApp } from '../context/AppContext';
 
 interface HomeViewProps {
   onOpenAuth: (tab?: 'login' | 'register' | 'trial' | 'admin') => void;
@@ -37,8 +39,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onNavigateToMaterials,
   onNavigateToStudios
 }) => {
+  const { currentUser } = useApp();
+
   return (
     <div className="space-y-16 sm:space-y-24 py-4 sm:py-8 animate-fade-in text-slate-800 dark:text-slate-100">
+      {/* DAILY MOTIVATION NOTIFICATION (Jika login terakhir > 24 jam) */}
+      {currentUser && (
+        <DailyMotivationBanner
+          user={currentUser}
+          onNavigateToMaterials={onNavigateToMaterials}
+        />
+      )}
+
       {/* 1. HERO SECTION */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white p-6 sm:p-12 lg:p-16 border border-indigo-800/40 shadow-2xl">
         {/* Glow ambient effects */}

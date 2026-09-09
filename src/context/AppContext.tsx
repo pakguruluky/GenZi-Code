@@ -293,7 +293,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    setCurrentUser(existing);
+    const nowIso = new Date().toISOString();
+    const storedLastLogin = existing.lastLoginAt || localStorage.getItem(`genzi_last_login_${existing.id}`) || existing.registeredAt;
+
+    const updatedUser: UserAccount = {
+      ...existing,
+      previousLoginAt: storedLastLogin || undefined,
+      lastLoginAt: nowIso
+    };
+
+    if (storedLastLogin) {
+      localStorage.setItem(`genzi_prev_login_stamp_${existing.id}`, storedLastLogin);
+    }
+    localStorage.setItem(`genzi_last_login_${existing.id}`, nowIso);
+
+    setUsers(prev => prev.map(u => (u.id === existing.id ? updatedUser : u)));
+    setCurrentUser(updatedUser);
+    syncUserToFirestore(updatedUser);
     return { success: true };
   };
 
