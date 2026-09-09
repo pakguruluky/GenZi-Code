@@ -430,7 +430,7 @@ export const CodeCombatLiveStudio: React.FC = () => {
   const [levelCleared, setLevelCleared] = useState(false);
   const [clearedLevels, setClearedLevels] = useState<number[]>([]);
 
-  const terminalEndRef = useRef<HTMLDivElement>(null);
+  const terminalContainerRef = useRef<HTMLDivElement>(null);
 
   // Sync SFX state
   useEffect(() => {
@@ -466,9 +466,11 @@ export const CodeCombatLiveStudio: React.FC = () => {
     resetLevel(activeLevelIdx, newLang);
   };
 
-  // Scroll logs to bottom
+  // Scroll terminal logs to bottom without scrolling the whole page
   useEffect(() => {
-    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (terminalContainerRef.current) {
+      terminalContainerRef.current.scrollTop = terminalContainerRef.current.scrollHeight;
+    }
   }, [logs]);
 
   // Instruction Parser & Execution
@@ -963,7 +965,7 @@ export const CodeCombatLiveStudio: React.FC = () => {
                   Bersihkan
                 </button>
               </div>
-              <div className="h-28 overflow-y-auto space-y-1 pt-2 pr-1 text-[11px] leading-relaxed">
+              <div ref={terminalContainerRef} className="h-28 overflow-y-auto space-y-1 pt-2 pr-1 text-[11px] leading-relaxed">
                 {logs.map((log, i) => (
                   <div
                     key={i}
@@ -982,7 +984,6 @@ export const CodeCombatLiveStudio: React.FC = () => {
                     {log}
                   </div>
                 ))}
-                <div ref={terminalEndRef} />
               </div>
             </div>
           </div>

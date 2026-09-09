@@ -20,7 +20,8 @@ import {
   Star,
   BookOpen,
   Users,
-  Compass
+  Compass,
+  Swords
 } from 'lucide-react';
 import { DURATION_OPTIONS } from '../utils/subscription';
 import { CurriculumShowcase } from './CurriculumShowcase';
@@ -75,7 +76,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
           {/* Subtitle */}
           <p className="text-sm sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Mulai dari logika visual <strong className="text-white">Scratch 3.0</strong>, simulasi sirkuit mikrokontroler <strong className="text-white">BBC Micro:bit IoT</strong>, hingga kecerdasan buatan <strong className="text-white">PictoBlox Machine Learning</strong>. Langsung jalan di browser tanpa instalasi ribet!
+            Mulai dari logika visual <strong className="text-white">Scratch 3.0</strong>, simulasi mikrokontroler <strong className="text-white">BBC Micro:bit IoT</strong>, kecerdasan buatan <strong className="text-white">PictoBlox AI</strong>, hingga petualangan teks nyata <strong className="text-white">CodeCombat Python & JS</strong>. Langsung jalan di browser tanpa instalasi ribet!
           </p>
 
           {/* Key Value Pill Highlights */}
@@ -86,7 +87,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </span>
             <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full border border-white/10">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              3 Studio Interaktif
+              4 Studio Interaktif
             </span>
             <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full border border-white/10">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -274,30 +275,30 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </section>
 
-      {/* 4. SHOWCASE 3 LIVE CODING STUDIOS */}
-      <section className="bg-slate-900 text-white rounded-3xl p-6 sm:p-12 border border-slate-800 shadow-xl space-y-8">
+      {/* 4. SHOWCASE 4 LIVE CODING STUDIOS */}
+      <section className="bg-slate-900 text-white rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-xl space-y-8">
         <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
           <div>
             <span className="text-amber-400 font-mono text-xs uppercase tracking-wider font-bold">
               Praktik Langsung (Hands-on Labs)
             </span>
             <h3 className="text-2xl sm:text-3xl font-extrabold mt-1 text-white">
-              3 Studio Pemrograman Terintegrasi
+              4 Studio Pemrograman Terintegrasi
             </h3>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">
-              Siswa tidak hanya membaca teori, melainkan langsung menyusun blok kode, menguji simulasi sirkuit, dan mengeksekusi kecerdasan buatan.
+            <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
+              Siswa tidak hanya membaca teori, melainkan langsung menyusun blok visual, menguji simulator mikrokontroler IoT, melatih model AI vision, hingga menaklukkan arena dungeon RPG dengan kode teks nyata Python & JavaScript.
             </p>
           </div>
           <button
             onClick={onNavigateToStudios}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition-colors flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition-colors flex items-center gap-2 shrink-0"
           >
             <span>Buka Semua Studio</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Studio 1: Scratch */}
           <div className="bg-slate-800/80 rounded-2xl p-5 border border-slate-700 flex flex-col justify-between hover:border-amber-400 transition-colors">
             <div>
@@ -311,7 +312,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
             <div className="mt-4 pt-3 border-t border-slate-700 flex items-center justify-between text-xs">
               <span className="text-amber-300 font-semibold">Tingkat Dasar & Menengah</span>
-              <span className="text-slate-400">Blok Kode Visual</span>
+              <span className="text-slate-400">Blok Visual</span>
             </div>
           </div>
 
@@ -346,6 +347,23 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <div className="mt-4 pt-3 border-t border-slate-700 flex items-center justify-between text-xs">
               <span className="text-purple-300 font-semibold">Artificial Intelligence</span>
               <span className="text-slate-400">Machine Learning</span>
+            </div>
+          </div>
+
+          {/* Studio 4: CodeCombat */}
+          <div className="bg-slate-800/80 rounded-2xl p-5 border border-slate-700 flex flex-col justify-between hover:border-rose-400 transition-colors">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold mb-3">
+                <Swords className="w-5 h-5" />
+              </div>
+              <h4 className="text-base font-bold text-white mb-1">CodeCombat RPG Dungeon</h4>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Belajar sintaks coding nyata lewat game RPG. Siswa mengendalikan hero ksatria menembus dungeon, mengalahkan monster ogre, dan mengumpulkan permata dengan Python & JavaScript!
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-700 flex items-center justify-between text-xs">
+              <span className="text-rose-300 font-semibold">Python & JavaScript</span>
+              <span className="text-slate-400">RPG Dungeon Live</span>
             </div>
           </div>
         </div>
@@ -406,7 +424,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   </li>
                   <li className="flex items-center gap-1.5">
                     <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span>3 Studio Interaktif</span>
+                    <span>4 Studio Interaktif</span>
                   </li>
                   <li className="flex items-center gap-1.5">
                     <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />

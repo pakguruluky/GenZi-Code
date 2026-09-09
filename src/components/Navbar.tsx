@@ -135,7 +135,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               Beranda
             </button>
 
-            {/* Materi, 3 Studio Coding, dan Leaderboard HANYA MUNCUL SETELAH LOGIN */}
+            {/* Materi, 4 Studio Coding, dan Leaderboard HANYA MUNCUL SETELAH LOGIN */}
             {currentUser && (
               <>
                 <button
@@ -159,7 +159,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <Laptop className="w-4 h-4" />
-                  3 Studio Coding
+                  4 Studio Coding
                 </button>
 
                 {/* Quick studio shortcuts */}
@@ -184,6 +184,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="px-2 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded border border-blue-200 dark:border-blue-800"
                   >
                     PictoBlox AI
+                  </button>
+                  <button
+                    onClick={() => openStudio('codecombat')}
+                    title="Buka CodeCombat RPG Studio (Python & JavaScript)"
+                    className="px-2 py-1 text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded border border-rose-200 dark:border-rose-800"
+                  >
+                    CodeCombat
                   </button>
                 </div>
 
@@ -408,7 +415,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
-            3 Studio
+            4 Studio
           </button>
           <button
             onClick={() => setCurrentTab('leaderboard')}
