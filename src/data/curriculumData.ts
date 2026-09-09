@@ -69,6 +69,21 @@ export const STUDIOS: StudioItem[] = [
       'Latih model klasifikasi gambar sederhana langsung dari webcam.',
       'Gabungkan logika if-else untuk membuat respons avatar sesuai emosi pengguna.'
     ]
+  },
+  {
+    id: 'codecombat',
+    name: 'CodeCombat Studio (RPG Dungeon)',
+    tagline: 'Text-Based RPG Coding in Python & JavaScript',
+    officialUrl: 'https://codecombat.com/play',
+    embedUrl: 'https://codecombat.com/play',
+    iconName: 'Swords',
+    description: 'Studio petualangan koding dungeon RPG nyata! Kendalikan ksatria dengan baris kode Python atau JavaScript nyata untuk menjelajah labirin, mengumpulkan kristal, dan menaklukkan ogre.',
+    color: 'from-amber-600 via-rose-600 to-red-700',
+    quickTips: [
+      'Pilih bahasa Python atau JavaScript di tab editor.',
+      'Gunakan perintah hero.moveRight(), hero.moveDown(), hero.moveLeft(), hero.moveUp().',
+      'Kalahkan musuh dengan hero.attack("Enemy") untuk membuka pintu dungeon.'
+    ]
   }
 ];
 

@@ -1,6 +1,6 @@
 {
   "name": "GenZi Code",
-  "description": "Platform belajar coding mandiri dan kecerdasan buatan berjenjang dengan studio Scratch, Micro:bit, dan PictoBlox.",
+  "description": "Platform belajar coding mandiri dan kecerdasan buatan berjenjang dengan studio Scratch, Micro:bit, PictoBlox AI, CodeCombat RPG Dungeon Python & JavaScript, serta sistem gamifikasi poin XP.",
   "requestFramePermissions": ["camera", "microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

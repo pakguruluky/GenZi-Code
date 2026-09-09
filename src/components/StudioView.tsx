@@ -7,6 +7,7 @@ import {
   Code2,
   Cpu,
   Bot,
+  Swords,
   Maximize2,
   Minimize2,
   Sparkles,
@@ -17,10 +18,11 @@ import { useApp } from '../context/AppContext';
 import { ScratchLiveStudio } from './studios/ScratchLiveStudio';
 import { PictoBloxLiveStudio } from './studios/PictoBloxLiveStudio';
 import { MicrobitLiveStudio } from './studios/MicrobitLiveStudio';
+import { CodeCombatLiveStudio } from './studios/CodeCombatLiveStudio';
 
 export const StudioView: React.FC = () => {
   const { activeStudio, openStudio } = useApp();
-  const [selectedStudioId, setSelectedStudioId] = useState<'scratch' | 'microbit' | 'pictoblox'>(
+  const [selectedStudioId, setSelectedStudioId] = useState<'scratch' | 'microbit' | 'pictoblox' | 'codecombat'>(
     activeStudio || 'scratch'
   );
   const [studioMode, setStudioMode] = useState<'interactive' | 'embed'>('interactive');
@@ -35,6 +37,8 @@ export const StudioView: React.FC = () => {
         return <Cpu className="w-6 h-6 text-emerald-600" />;
       case 'pictoblox':
         return <Bot className="w-6 h-6 text-blue-600" />;
+      case 'codecombat':
+        return <Swords className="w-6 h-6 text-rose-600" />;
       default:
         return <Laptop className="w-6 h-6 text-indigo-600" />;
     }
@@ -48,13 +52,13 @@ export const StudioView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">
               <Laptop className="w-4 h-4" />
-              Live Interactive Coding Studios
+              Live Interactive Coding Studios (4 Studio Unggulan)
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              Live Studio Scratch & PictoBlox AI
+              Live Studio Scratch, PictoBlox AI & CodeCombat RPG
             </h1>
             <p className="text-slate-600 dark:text-slate-400 text-sm mt-1 max-w-3xl">
-              Studio coding interaktif yang dirancang mirip aslinya. Lengkap dengan blok pemrograman visual, panggung pementasan (stage) langsung, efek suara asli, kecerdasan buatan (AI Face & Mood), simulator robot Quarky, serta Text-to-Speech.
+              Studio coding interaktif yang dirancang mirip aslinya. Lengkap dengan blok visual Scratch, simulator IoT BBC micro:bit, AI & Machine Learning PictoBlox, serta petualangan teks nyata CodeCombat dalam bahasa Python dan JavaScript.
             </p>
           </div>
 
@@ -96,7 +100,7 @@ export const StudioView: React.FC = () => {
         </div>
 
         {/* Studio Tabs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
           {STUDIOS.map(studio => {
             const isSelected = studio.id === selectedStudioId;
             return (
@@ -138,6 +142,7 @@ export const StudioView: React.FC = () => {
           {selectedStudioId === 'scratch' && <ScratchLiveStudio />}
           {selectedStudioId === 'pictoblox' && <PictoBloxLiveStudio />}
           {selectedStudioId === 'microbit' && <MicrobitLiveStudio />}
+          {selectedStudioId === 'codecombat' && <CodeCombatLiveStudio />}
         </div>
       ) : (
         /* Iframe Embed Mode */

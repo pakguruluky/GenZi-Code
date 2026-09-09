@@ -154,19 +154,37 @@ export const StudentProgressBar: React.FC<StudentProgressBarProps> = ({
               </p>
             </div>
 
-            {/* Kotak Angka Persentase Besar */}
-            <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shrink-0 self-start md:self-auto">
-              <div className="text-right">
-                <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Total Kelulusan
+            {/* Kotak Angka Persentase & Akumulasi XP Siswa */}
+            <div className="flex flex-wrap items-center gap-3 shrink-0 self-start md:self-auto">
+              {/* Kotak Akumulasi XP Gamifikasi */}
+              <div className="flex items-center gap-3 bg-amber-500/10 dark:bg-amber-500/15 p-3 sm:p-4 rounded-2xl border border-amber-300/80 dark:border-amber-700/80 shrink-0 shadow-xs">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold shadow-xs">
+                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 fill-amber-500 text-amber-500 animate-pulse" />
                 </div>
-                <div className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-500 bg-clip-text text-transparent">
-                  {percentage}%
+                <div className="text-left">
+                  <div className="text-[10px] sm:text-[11px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+                    Akumulasi XP
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
+                    {currentUser.xp || 0} <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">XP</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
-                <TrendingUp className="w-6 h-6" />
+              {/* Kotak Angka Persentase Besar */}
+              <div className="flex items-center gap-3 sm:gap-4 bg-slate-50 dark:bg-slate-800/80 p-3 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shrink-0">
+                <div className="text-right">
+                  <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Total Kelulusan
+                  </div>
+                  <div className="text-2xl sm:text-3xl sm:text-4xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-500 bg-clip-text text-transparent">
+                    {percentage}%
+                  </div>
+                </div>
+
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
               </div>
             </div>
           </div>

@@ -56,7 +56,7 @@ const INITIAL_USERS: UserAccount[] = [
 interface AppContextType {
   currentUser: UserAccount | null;
   users: UserAccount[];
-  activeStudio: 'scratch' | 'microbit' | 'pictoblox' | null;
+  activeStudio: 'scratch' | 'microbit' | 'pictoblox' | 'codecombat' | null;
   selectedMaterial: Material | null;
   darkMode: boolean;
   toggleDarkMode: () => void;
@@ -96,10 +96,11 @@ interface AppContextType {
   clearDemoData: () => Promise<void>;
   syncToGoogleSheets: () => Promise<{ success: boolean; message: string }>;
   completeMaterial: (materialId: string) => Promise<void>;
+  addXp: (amount: number, reason: string) => Promise<void>;
   resetUserProgress: (userId: string) => Promise<void>;
   switchUser: (user: UserAccount) => void;
   logout: () => void;
-  openStudio: (id: 'scratch' | 'microbit' | 'pictoblox' | null) => void;
+  openStudio: (id: 'scratch' | 'microbit' | 'pictoblox' | 'codecombat' | null) => void;
   openMaterial: (material: Material | null) => void;
   isMaterialUnlocked: (material: Material) => boolean;
   canAccessMaterial: (material: Material) => { allowed: boolean; reason?: string };
@@ -200,7 +201,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setDarkMode(prev => !prev);
   };
 
-  const [activeStudio, setActiveStudio] = useState<'scratch' | 'microbit' | 'pictoblox' | null>(null);
+  const [activeStudio, setActiveStudio] = useState<'scratch' | 'microbit' | 'pictoblox' | 'codecombat' | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
 
   // Sync with Firestore on mount: Gunakan data asli dari Cloud Firestore
@@ -543,7 +544,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const updatedIds = [...currentUser.completedMaterialIds, materialId];
-    const earnedXp = 50;
+    const earnedXp = 100;
     const currentXp = currentUser.xp || 0;
     const newXp = currentXp + earnedXp;
 
@@ -569,12 +570,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUsers(prev => prev.map(u => (u.id === currentUser.id ? updatedUser : u)));
     await syncUserToFirestore(updatedUser);
 
-    // Instant Positive Feedback Toast
+    // Instant Positive Feedback Toast with XP Gamification
     const firstName = currentUser.name.split(' ')[0] || 'Siswa Hebat';
     showToast({
-      type: 'success',
+      type: 'xp',
       title: '🎉 Modul Berhasil Diselesaikan!',
-      message: `Hebat sekali ${firstName}! Kamu berhasil menyelesaikan Modul ${modSeq}: "${modTitle}". +${earnedXp} XP bertambah & modul berikutnya kini terbuka!`,
+      message: `Hebat sekali ${firstName}! Kamu menyelesaikan Modul ${modSeq}: "${modTitle}". +${earnedXp} XP bertambah ke profilmu!`,
       moduleName: modTitle,
       xpGained: earnedXp,
       duration: 5000
@@ -592,13 +593,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const addXp = async (amount: number, reason: string) => {
+    if (!currentUser) return;
+    const currentXp = currentUser.xp || 0;
+    const newXp = currentXp + amount;
+    const updatedUser: UserAccount = {
+      ...currentUser,
+      xp: newXp
+    };
+    setCurrentUser(updatedUser);
+    setUsers(prev => prev.map(u => (u.id === currentUser.id ? updatedUser : u)));
+    await syncUserToFirestore(updatedUser);
+
+    showToast({
+      type: 'xp',
+      title: `⚡ +${amount} XP Berhasil Diraih!`,
+      message: reason,
+      xpGained: amount,
+      duration: 4500
+    });
+
+    try {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.7 }
+      });
+    } catch {
+      // ignore
+    }
+  };
+
   const resetUserProgress = async (userId: string) => {
     const target = users.find(u => u.id === userId);
     if (!target) return;
 
     const updated: UserAccount = {
       ...target,
-      completedMaterialIds: []
+      completedMaterialIds: [],
+      xp: 0
     };
 
     setUsers(prev => prev.map(u => (u.id === userId ? updated : u)));
@@ -616,7 +649,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(null);
   };
 
-  const openStudio = (id: 'scratch' | 'microbit' | 'pictoblox' | null) => {
+  const openStudio = (id: 'scratch' | 'microbit' | 'pictoblox' | 'codecombat' | null) => {
     setActiveStudio(id);
   };
 
@@ -798,6 +831,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clearDemoData,
         syncToGoogleSheets,
         completeMaterial,
+        addXp,
         resetUserProgress,
         switchUser,
         logout,

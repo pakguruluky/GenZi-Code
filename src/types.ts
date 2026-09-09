@@ -56,7 +56,7 @@ export interface Material {
 }
 
 export interface StudioItem {
-  id: 'scratch' | 'microbit' | 'pictoblox';
+  id: 'scratch' | 'microbit' | 'pictoblox' | 'codecombat';
   name: string;
   tagline: string;
   officialUrl: string;

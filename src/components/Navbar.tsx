@@ -18,8 +18,11 @@ import {
   Moon,
   Award,
   FileSpreadsheet,
-  Trophy
+  Trophy,
+  Zap,
+  User
 } from 'lucide-react';
+import { StudentProfileModal } from './StudentProfileModal';
 
 interface NavbarProps {
   currentTab: 'home' | 'materi' | 'studios' | 'leaderboard' | 'admin' | 'instruktur' | 'sheets';
@@ -44,6 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     setViewingReportUser
   } = useApp();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const getRoleBadge = () => {
     if (!currentUser) return null;
@@ -256,75 +260,101 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {currentUser ? (
-              <div className="relative">
+              <div className="flex items-center gap-2">
+                {/* Gamification XP Pill Badge */}
                 <button
-                  onClick={() => setShowRoleMenu(!showRoleMenu)}
-                  className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors"
+                  onClick={() => setShowProfileModal(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-300/80 dark:border-amber-700/80 text-amber-700 dark:text-amber-300 font-black text-xs transition-all shadow-xs group"
+                  title="Klik untuk melihat Profil Siswa, Level & Akumulasi XP"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0">
-                    {currentUser.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="text-left hidden sm:block">
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1 max-w-[120px]">
-                      {currentUser.name}
-                    </p>
-                    <div className="flex items-center gap-1">
-                      {getRoleBadge()}
-                    </div>
-                  </div>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 group-hover:scale-110 transition-transform animate-pulse" />
+                  <span>{currentUser.xp || 0}</span>
+                  <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">XP</span>
                 </button>
 
-                {/* Dropdown switch & Action Menu */}
-                {showRoleMenu && (
-                  <div
-                    className="absolute right-0 mt-2 w-76 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50 text-xs"
-                    onClick={() => setShowRoleMenu(false)}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowRoleMenu(!showRoleMenu)}
+                    className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors"
                   >
-                    <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
-                      <p className="font-bold text-slate-900 dark:text-white">{currentUser.name}</p>
-                      <p className="text-slate-500 dark:text-slate-400 text-[11px] truncate">{currentUser.email}</p>
-                      <div className="mt-1 flex items-center justify-between">
-                        <span className="text-slate-500 dark:text-slate-400">Progress Belajar:</span>
-                        <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                          {getCompletionPercentage(currentUser)}%
-                        </span>
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0">
+                      {currentUser.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="text-left hidden sm:block">
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1 max-w-[120px]">
+                        {currentUser.name}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        {getRoleBadge()}
                       </div>
                     </div>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
 
-                    {/* Quick Access to Certificate & HTML Report for student or admin */}
-                    <div className="p-2 border-b border-slate-100 dark:border-slate-800 space-y-1">
-                      <button
-                        onClick={() => setViewingCertificateUser(currentUser)}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center gap-2 font-semibold"
-                      >
-                        <Award className="w-4 h-4 text-amber-500" />
-                        <span>Lihat Sertifikat Digital Saya</span>
-                      </button>
-                      <button
-                        onClick={() => setViewingReportUser(currentUser)}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center gap-2 font-semibold"
-                      >
-                        <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-                        <span>Buka Rapor Belajar (HTML)</span>
-                      </button>
-                    </div>
+                  {/* Dropdown switch & Action Menu */}
+                  {showRoleMenu && (
+                    <div
+                      className="absolute right-0 mt-2 w-76 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50 text-xs"
+                      onClick={() => setShowRoleMenu(false)}
+                    >
+                      <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+                        <p className="font-bold text-slate-900 dark:text-white">{currentUser.name}</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-[11px] truncate">{currentUser.email}</p>
+                        <div className="mt-1 flex items-center justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Progress Belajar:</span>
+                          <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                            {getCompletionPercentage(currentUser)}%
+                          </span>
+                        </div>
+                      </div>
 
-                    <div className="border-t border-slate-100 dark:border-slate-800 pt-1 mt-1 px-2">
-                      <button
-                        onClick={() => {
-                          logout();
-                          setCurrentTab('home');
-                          setShowRoleMenu(false);
-                        }}
-                        className="w-full text-left px-3 py-2 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 font-medium"
-                      >
-                        <LogOut className="w-3.5 h-3.5" />
-                        Keluar (Logout)
-                      </button>
+                      {/* Quick Access to Profile & Gamification */}
+                      <div className="p-2 border-b border-slate-100 dark:border-slate-800 space-y-1">
+                        <button
+                          onClick={() => setShowProfileModal(true)}
+                          className="w-full text-left px-2.5 py-1.5 rounded-lg text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center justify-between font-semibold"
+                        >
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-indigo-500" />
+                            <span>Profil & Akumulasi XP</span>
+                          </div>
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-300 font-bold text-[10px]">
+                            {currentUser.xp || 0} XP
+                          </span>
+                        </button>
+
+                        <button
+                          onClick={() => setViewingCertificateUser(currentUser)}
+                          className="w-full text-left px-2.5 py-1.5 rounded-lg text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center gap-2 font-semibold"
+                        >
+                          <Award className="w-4 h-4 text-amber-500" />
+                          <span>Lihat Sertifikat Digital Saya</span>
+                        </button>
+                        <button
+                          onClick={() => setViewingReportUser(currentUser)}
+                          className="w-full text-left px-2.5 py-1.5 rounded-lg text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center gap-2 font-semibold"
+                        >
+                          <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                          <span>Buka Rapor Belajar (HTML)</span>
+                        </button>
+                      </div>
+
+                      <div className="border-t border-slate-100 dark:border-slate-800 pt-1 mt-1 px-2">
+                        <button
+                          onClick={() => {
+                            logout();
+                            setCurrentTab('home');
+                            setShowRoleMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 font-medium"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          Keluar (Logout)
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -417,6 +447,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
       )}
+
+      {/* Student Profile & Gamification XP Modal */}
+      <StudentProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </header>
   );
 };
