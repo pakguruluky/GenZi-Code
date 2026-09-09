@@ -34,7 +34,7 @@ export const DEMO_USER_IDS = new Set([
 const INITIAL_USERS: UserAccount[] = [
   {
     id: 'user-admin-01',
-    name: 'Pak Guru Hilman (Pak GuruAI)',
+    name: 'Pak Guru Luky',
     email: 'hilmansyarif53@gmail.com',
     role: 'admin',
     status: 'active',
@@ -45,11 +45,11 @@ const INITIAL_USERS: UserAccount[] = [
     completedMaterialIds: ALL_MATERIALS.map(m => m.id),
     school: 'GenZi Code Academy - Pusat Inovasi Coding & AI',
     phone: '0812-3456-7890',
-    notes: 'Super Administrator, Lead Instructor & Founder Pak GuruAI',
+    notes: 'Super Administrator, Kepala Instruktur & Founder',
     quizScore: 100,
     quizCount: 54,
     xp: 6800,
-    badges: ['Pendiri GenZi', 'Master AI', 'Lead Guru']
+    badges: ['Pendiri GenZi', 'Master AI', 'Kepala Instruktur']
   }
 ];
 

@@ -109,8 +109,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ student: pro
     </div>
     <div class="signatures">
       <div class="sign-box">
-        <div class="sign-name">Pak GuruAI</div>
-        <div class="sign-title"><strong>Pak GuruAI</strong><br>Founder & Master AI Instructor</div>
+        <div class="sign-name">Pak Guru Luky</div>
+        <div class="sign-title"><strong>Pak Guru Luky</strong><br>Kepala Instruktur & Founder</div>
       </div>
       <div class="sign-box">
         <div class="seal">
@@ -269,17 +269,17 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ student: pro
 
             {/* Signatures & Verification Seal */}
             <div className="mt-10 pt-6 border-t border-slate-200 flex items-end justify-between gap-4 relative z-10">
-              {/* Left Signatory: Pak GuruAI */}
+              {/* Left Signatory: Pak Guru Luky */}
               <div className="text-center w-48">
                 <div className="h-14 flex items-center justify-center">
                   {/* Digital Signature Stylized */}
                   <span className="font-serif italic font-bold text-lg text-indigo-900 tracking-wider">
-                    Pak GuruAI
+                    Pak Guru Luky
                   </span>
                 </div>
                 <div className="border-t border-slate-400 pt-1">
-                  <p className="font-bold text-xs text-slate-900">Pak GuruAI</p>
-                  <p className="text-[10px] text-slate-500">Founder & Lead AI Instructor</p>
+                  <p className="font-bold text-xs text-slate-900">Pak Guru Luky</p>
+                  <p className="text-[10px] text-slate-500">Kepala Instruktur & Founder</p>
                 </div>
               </div>
 

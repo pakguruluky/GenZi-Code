@@ -365,7 +365,7 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
     </table>
 
     <div class="notes-box">
-      <h4>Catatan Evaluasi & Umpan Balik Instruktur (Pak GuruAI):</h4>
+      <h4>Catatan Evaluasi & Umpan Balik Kepala Instruktur (Pak Guru Luky):</h4>
       <p>${notes}</p>
     </div>
 
@@ -380,8 +380,8 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
       <div class="sign-box">
         <div>Tanggal Rapor: ${reportDate}</div>
         <div class="sign-line">
-          Pak GuruAI<br>
-          <span style="font-size:10px; font-weight:normal; color:#64748b;">Founder & Master AI Instructor</span>
+          Pak Guru Luky<br>
+          <span style="font-size:10px; font-weight:normal; color:#64748b;">Kepala Instruktur & Founder</span>
         </div>
       </div>
     </div>
@@ -657,7 +657,7 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
             <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 my-6">
               <h4 className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-emerald-600" />
-                Catatan Bimbingan & Evaluasi Instruktur (Pak GuruAI):
+                Catatan Bimbingan & Evaluasi Kepala Instruktur (Pak Guru Luky):
               </h4>
               <p className="text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed">
                 {notes}
@@ -676,8 +676,8 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
               <div className="text-center">
                 <p className="text-[11px]">Pusat Akademik, {reportDate}</p>
                 <div className="h-10"></div>
-                <p className="font-bold text-slate-900 dark:text-white">Pak GuruAI</p>
-                <p className="text-[10px] text-slate-500">Founder & Lead AI Instructor</p>
+                <p className="font-bold text-slate-900 dark:text-white">Pak Guru Luky</p>
+                <p className="text-[10px] text-slate-500">Kepala Instruktur & Founder</p>
               </div>
             </div>
 

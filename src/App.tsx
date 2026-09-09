@@ -115,7 +115,7 @@ function MainLayout() {
                 Akses Terbatas: Khusus Admin
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                Halaman <strong>Tabel Database Pengguna</strong> hanya dapat diakses dan dikelola secara langsung oleh akun Administrator (Pak GuruAI).
+                Halaman <strong>Tabel Database Pengguna</strong> hanya dapat diakses dan dikelola secara langsung oleh akun Administrator (Kepala Instruktur Pak Guru Luky).
               </p>
               <div className="mt-6 flex justify-center gap-3">
                 <button
