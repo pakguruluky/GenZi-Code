@@ -23,6 +23,8 @@ import {
   Compass
 } from 'lucide-react';
 import { DURATION_OPTIONS } from '../utils/subscription';
+import { CurriculumShowcase } from './CurriculumShowcase';
+import { StudentProgressBar } from './StudentProgressBar';
 
 interface HomeViewProps {
   onOpenAuth: (tab?: 'login' | 'register' | 'trial' | 'admin') => void;
@@ -107,16 +109,29 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* Secondary Action */}
           <div className="pt-2">
             <button
-              onClick={onNavigateToMaterials}
-              className="text-xs sm:text-sm text-indigo-300 hover:text-white underline underline-offset-4 transition-colors"
+              onClick={() => {
+                const el = document.getElementById('peta-kurikulum');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  onNavigateToMaterials();
+                }
+              }}
+              className="text-xs sm:text-sm text-indigo-300 hover:text-white underline underline-offset-4 transition-colors inline-flex items-center gap-1.5"
             >
-              Lihat Silabus Kurikulum Lengkap & Demo →
+              <span>Lihat Silabus Kurikulum Lengkap (54 Modul) & Preview Proyek ↓</span>
             </button>
           </div>
         </div>
       </section>
 
-      {/* 2. RESPONSIVE ACROSS ALL DEVICES BADGE */}
+      {/* 2. VISUALISASI PROGRESS BAR PENYELESAIAN MATERI SISWA */}
+      <StudentProgressBar
+        onOpenAuth={onOpenAuth}
+        onNavigateToMaterials={onNavigateToMaterials}
+      />
+
+      {/* 3. RESPONSIVE ACROSS ALL DEVICES BADGE */}
       <section className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-1 text-center md:text-left">
@@ -149,7 +164,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </section>
 
-      {/* 3. KEUNGGULAN UTAMA (USP / MARKETING HIGHLIGHTS) */}
+      {/* 3. GAMBARAN MATERI SECARA GLOBAL (54 MODUL SILABUS MARKETING SHOWCASE) */}
+      <CurriculumShowcase onOpenAuth={onOpenAuth} />
+
+      {/* 4. KEUNGGULAN UTAMA (USP / MARKETING HIGHLIGHTS) */}
       <section className="space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-3">
           <h2 className="text-xs sm:text-sm font-bold tracking-widest text-indigo-600 dark:text-indigo-400 uppercase">

@@ -19,12 +19,14 @@ interface MaterialModalProps {
   material: Material | null;
   onClose: () => void;
   onOpenStudio: (id: 'scratch' | 'microbit' | 'pictoblox') => void;
+  onOpenAuth?: (tab?: 'login' | 'register' | 'trial' | 'admin') => void;
 }
 
 export const MaterialModal: React.FC<MaterialModalProps> = ({
   material,
   onClose,
-  onOpenStudio
+  onOpenStudio,
+  onOpenAuth
 }) => {
   const {
     currentUser,
@@ -115,13 +117,24 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({
               <p className="text-sm text-amber-800 max-w-md mx-auto mb-6">
                 {access.reason}
               </p>
-              <div className="flex justify-center gap-3">
+              <div className="flex flex-wrap justify-center gap-3">
                 <button
                   onClick={onClose}
                   className="px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
                 >
                   Kembali ke Daftar Materi
                 </button>
+                {!currentUser && onOpenAuth && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenAuth('login');
+                    }}
+                    className="px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                  >
+                    Masuk Akun Siswa
+                  </button>
+                )}
               </div>
             </div>
           ) : (

@@ -64,3 +64,14 @@ export interface StudioItem {
   color: string;
   quickTips: string[];
 }
+
+export interface ToastNotification {
+  id: string;
+  type?: 'success' | 'info' | 'badge' | 'xp';
+  title: string;
+  message: string;
+  moduleName?: string;
+  xpGained?: number;
+  duration?: number;
+}
+

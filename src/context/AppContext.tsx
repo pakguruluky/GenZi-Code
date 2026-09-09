@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserAccount, UserRole, Material, SubscriptionDuration } from '../types';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { UserAccount, UserRole, Material, SubscriptionDuration, ToastNotification } from '../types';
 import { ALL_MATERIALS } from '../data/curriculumData';
 import {
   calculateExpirationDate,
@@ -106,6 +106,9 @@ interface AppContextType {
   getCompletionPercentage: (user?: UserAccount | null) => number;
   exportTableToCSV: () => void;
   exportToGoogleSheetsCSV: () => void;
+  toast: ToastNotification | null;
+  showToast: (toast: Omit<ToastNotification, 'id'>) => void;
+  hideToast: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -145,21 +148,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_USERS;
   });
 
+  // User state: Pertama kali membuka aplikasi, langsung ke halaman depan & belum masuk akun siapapun (null)
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_CURRENT_USER);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.role === 'admin' || DEMO_USER_IDS.has(parsed.id)) {
-          return INITIAL_USERS[0];
-        }
-        return parsed;
-      } catch (e) {
-        console.error('Failed to parse saved user', e);
+    try {
+      const sessionActive = sessionStorage.getItem('genzicode_session_active');
+      if (!sessionActive) {
+        localStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+        return null;
       }
+      const saved = localStorage.getItem(STORAGE_KEY_CURRENT_USER);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.id && !DEMO_USER_IDS.has(parsed.id)) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Session initialization note', e);
     }
-    return INITIAL_USERS[0];
+    return null;
   });
+
+  // Toast Notification State
+  const [toast, setToast] = useState<ToastNotification | null>(null);
+
+  const hideToast = useCallback(() => {
+    setToast(null);
+  }, []);
+
+  const showToast = useCallback((newToast: Omit<ToastNotification, 'id'>) => {
+    const id = 'toast-' + Date.now();
+    setToast({
+      ...newToast,
+      id,
+      duration: newToast.duration || 4500
+    });
+  }, []);
 
   // Toggle Dark Mode with HTML class sync
   useEffect(() => {
@@ -209,10 +233,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     if (currentUser) {
+      try {
+        sessionStorage.setItem('genzicode_session_active', 'true');
+      } catch {
+        // ignore
+      }
       localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentUser));
       // update current user in list if modified
       setUsers(prev => prev.map(u => (u.id === currentUser.id ? currentUser : u)));
     } else {
+      try {
+        sessionStorage.removeItem('genzicode_session_active');
+      } catch {
+        // ignore
+      }
       localStorage.removeItem(STORAGE_KEY_CURRENT_USER);
     }
   }, [currentUser]);
@@ -444,7 +478,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUsers(prev => prev.filter(u => u.id !== userId));
     await deleteUserFromFirestore(userId);
     if (currentUser?.id === userId) {
-      setCurrentUser(INITIAL_USERS[0]);
+      setCurrentUser(null);
     }
   };
 
@@ -462,8 +496,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const finalUsers = hasAdmin ? realUsers : [INITIAL_USERS[0], ...realUsers];
     setUsers(finalUsers);
     localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(finalUsers));
-    if (!currentUser || DEMO_USER_IDS.has(currentUser.id)) {
-      setCurrentUser(INITIAL_USERS[0]);
+    if (currentUser && DEMO_USER_IDS.has(currentUser.id)) {
+      setCurrentUser(null);
     }
   };
 
@@ -477,23 +511,64 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const completeMaterial = async (materialId: string) => {
     if (!currentUser) return;
-    if (currentUser.completedMaterialIds.includes(materialId)) return;
+
+    const completedMat = ALL_MATERIALS.find(m => m.id === materialId);
+    const modTitle = completedMat?.title || 'Modul Pembelajaran';
+    const modSeq = completedMat?.sequence ? `#${completedMat.sequence}` : '';
+
+    if (currentUser.completedMaterialIds.includes(materialId)) {
+      showToast({
+        type: 'info',
+        title: 'Modul Sudah Selesai',
+        message: `Modul ${modSeq} "${modTitle}" sudah ada dalam daftar capaian belajarmu.`,
+        duration: 3500
+      });
+      return;
+    }
 
     const updatedIds = [...currentUser.completedMaterialIds, materialId];
+    const earnedXp = 50;
+    const currentXp = currentUser.xp || 0;
+    const newXp = currentXp + earnedXp;
+
+    const currentBadges = [...(currentUser.badges || [])];
+    if (updatedIds.length >= 1 && !currentBadges.includes('Langkah Pertama')) {
+      currentBadges.push('Langkah Pertama');
+    }
+    if (updatedIds.length >= 5 && !currentBadges.includes('Penjelajah Kode')) {
+      currentBadges.push('Penjelajah Kode');
+    }
+    if (updatedIds.length >= 10 && !currentBadges.includes('Bintang GenZi')) {
+      currentBadges.push('Bintang GenZi');
+    }
+
     const updatedUser: UserAccount = {
       ...currentUser,
-      completedMaterialIds: updatedIds
+      completedMaterialIds: updatedIds,
+      xp: newXp,
+      badges: currentBadges
     };
 
     setCurrentUser(updatedUser);
     setUsers(prev => prev.map(u => (u.id === currentUser.id ? updatedUser : u)));
     await syncUserToFirestore(updatedUser);
 
+    // Instant Positive Feedback Toast
+    const firstName = currentUser.name.split(' ')[0] || 'Siswa Hebat';
+    showToast({
+      type: 'success',
+      title: '🎉 Modul Berhasil Diselesaikan!',
+      message: `Hebat sekali ${firstName}! Kamu berhasil menyelesaikan Modul ${modSeq}: "${modTitle}". +${earnedXp} XP bertambah & modul berikutnya kini terbuka!`,
+      moduleName: modTitle,
+      xpGained: earnedXp,
+      duration: 5000
+    });
+
     // Trigger celebration effects
     try {
       confetti({
-        particleCount: 80,
-        spread: 70,
+        particleCount: 90,
+        spread: 75,
         origin: { y: 0.6 }
       });
     } catch {
@@ -716,7 +791,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         canAccessMaterial,
         getCompletionPercentage,
         exportTableToCSV,
-        exportToGoogleSheetsCSV
+        exportToGoogleSheetsCSV,
+        toast,
+        showToast,
+        hideToast
       }}
     >
       {children}

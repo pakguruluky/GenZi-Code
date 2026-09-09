@@ -131,67 +131,72 @@ export const Navbar: React.FC<NavbarProps> = ({
               Beranda
             </button>
 
-            <button
-              onClick={() => setCurrentTab('materi')}
-              className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
-                currentTab === 'materi'
-                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-              Materi Berjenjang
-            </button>
+            {/* Materi, 3 Studio Coding, dan Leaderboard HANYA MUNCUL SETELAH LOGIN */}
+            {currentUser && (
+              <>
+                <button
+                  onClick={() => setCurrentTab('materi')}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+                    currentTab === 'materi'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Layers className="w-4 h-4" />
+                  Materi Berjenjang
+                </button>
 
-            <button
-              onClick={() => setCurrentTab('studios')}
-              className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
-                currentTab === 'studios'
-                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <Laptop className="w-4 h-4" />
-              3 Studio Coding
-            </button>
+                <button
+                  onClick={() => setCurrentTab('studios')}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+                    currentTab === 'studios'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Laptop className="w-4 h-4" />
+                  3 Studio Coding
+                </button>
 
-            {/* Quick studio shortcuts */}
-            <div className="flex items-center gap-1 pl-1 border-l border-slate-200 dark:border-slate-800 ml-1">
-              <button
-                onClick={() => openStudio('scratch')}
-                title="Buka Scratch Studio"
-                className="px-2 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded border border-amber-200 dark:border-amber-800"
-              >
-                Scratch
-              </button>
-              <button
-                onClick={() => openStudio('microbit')}
-                title="Buka Micro:bit Studio"
-                className="px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded border border-emerald-200 dark:border-emerald-800"
-              >
-                Micro:bit
-              </button>
-              <button
-                onClick={() => openStudio('pictoblox')}
-                title="Buka PictoBlox AI Studio"
-                className="px-2 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded border border-blue-200 dark:border-blue-800"
-              >
-                PictoBlox AI
-              </button>
-            </div>
+                {/* Quick studio shortcuts */}
+                <div className="flex items-center gap-1 pl-1 border-l border-slate-200 dark:border-slate-800 ml-1">
+                  <button
+                    onClick={() => openStudio('scratch')}
+                    title="Buka Scratch Studio"
+                    className="px-2 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded border border-amber-200 dark:border-amber-800"
+                  >
+                    Scratch
+                  </button>
+                  <button
+                    onClick={() => openStudio('microbit')}
+                    title="Buka Micro:bit Studio"
+                    className="px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded border border-emerald-200 dark:border-emerald-800"
+                  >
+                    Micro:bit
+                  </button>
+                  <button
+                    onClick={() => openStudio('pictoblox')}
+                    title="Buka PictoBlox AI Studio"
+                    className="px-2 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded border border-blue-200 dark:border-blue-800"
+                  >
+                    PictoBlox AI
+                  </button>
+                </div>
 
-            {/* Leaderboard Button */}
-            <button
-              onClick={() => setCurrentTab('leaderboard')}
-              className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 ml-1 ${
-                currentTab === 'leaderboard'
-                  ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <Trophy className="w-4 h-4 text-amber-500" />
-              <span>Leaderboard</span>
-            </button>
+                {/* Leaderboard Button */}
+                <button
+                  onClick={() => setCurrentTab('leaderboard')}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 ml-1 ${
+                    currentTab === 'leaderboard'
+                      ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Trophy className="w-4 h-4 text-amber-500" />
+                  <span>Leaderboard</span>
+                </button>
+              </>
+            )}
 
             {/* Admin or Instructor View */}
             {(currentUser?.role === 'admin' || currentUser?.role === 'instruktur') && (
@@ -342,74 +347,76 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Tab Bar */}
-      <div className="md:hidden flex items-center overflow-x-auto whitespace-nowrap gap-1.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-900/95 px-2.5 py-1.5 text-xs font-semibold scrollbar-none">
-        <button
-          onClick={() => setCurrentTab('home')}
-          className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
-            currentTab === 'home'
-              ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-          }`}
-        >
-          Beranda
-        </button>
-        <button
-          onClick={() => setCurrentTab('materi')}
-          className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
-            currentTab === 'materi'
-              ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-          }`}
-        >
-          Materi
-        </button>
-        <button
-          onClick={() => setCurrentTab('studios')}
-          className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
-            currentTab === 'studios'
-              ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-          }`}
-        >
-          3 Studio
-        </button>
-        <button
-          onClick={() => setCurrentTab('leaderboard')}
-          className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
-            currentTab === 'leaderboard'
-              ? 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-          }`}
-        >
-          Juara
-        </button>
-        {(currentUser?.role === 'admin' || currentUser?.role === 'instruktur') && (
+      {/* Mobile Tab Bar - HANYA MUNCUL JIKA SUDAH LOGIN */}
+      {currentUser && (
+        <div className="md:hidden flex items-center overflow-x-auto whitespace-nowrap gap-1.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-900/95 px-2.5 py-1.5 text-xs font-semibold scrollbar-none">
           <button
-            onClick={() => setCurrentTab(currentUser.role === 'admin' ? 'admin' : 'instruktur')}
+            onClick={() => setCurrentTab('home')}
             className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
-              currentTab === 'admin' || currentTab === 'instruktur'
-                ? 'bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
+              currentTab === 'home'
+                ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
-            {currentUser.role === 'admin' ? `Admin (${pendingCount})` : 'Instruktur'}
+            Beranda
           </button>
-        )}
-        {/* Only Admin can see Sheets DB on mobile */}
-        {currentUser?.role === 'admin' && (
           <button
-            onClick={() => setCurrentTab('sheets')}
+            onClick={() => setCurrentTab('materi')}
             className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
-              currentTab === 'sheets'
-                ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
+              currentTab === 'materi'
+                ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
-            Sheets DB
+            Materi
           </button>
-        )}
-      </div>
+          <button
+            onClick={() => setCurrentTab('studios')}
+            className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
+              currentTab === 'studios'
+                ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+            }`}
+          >
+            3 Studio
+          </button>
+          <button
+            onClick={() => setCurrentTab('leaderboard')}
+            className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
+              currentTab === 'leaderboard'
+                ? 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+            }`}
+          >
+            Juara
+          </button>
+          {(currentUser.role === 'admin' || currentUser.role === 'instruktur') && (
+            <button
+              onClick={() => setCurrentTab(currentUser.role === 'admin' ? 'admin' : 'instruktur')}
+              className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
+                currentTab === 'admin' || currentTab === 'instruktur'
+                  ? 'bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              {currentUser.role === 'admin' ? `Admin (${pendingCount})` : 'Instruktur'}
+            </button>
+          )}
+          {/* Only Admin can see Sheets DB on mobile */}
+          {currentUser.role === 'admin' && (
+            <button
+              onClick={() => setCurrentTab('sheets')}
+              className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
+                currentTab === 'sheets'
+                  ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              Sheets DB
+            </button>
+          )}
+        </div>
+      )}
     </header>
   );
 };

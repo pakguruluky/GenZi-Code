@@ -18,6 +18,7 @@ import { AuthModal } from './components/AuthModal';
 import { CertificateModal } from './components/CertificateModal';
 import { ProgressReportModal } from './components/ProgressReportModal';
 import { Leaderboard } from './components/Leaderboard';
+import { ToastNotification } from './components/ToastNotification';
 import { Material } from './types';
 import {
   Code2,
@@ -48,9 +49,9 @@ function MainLayout() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authDefaultTab, setAuthDefaultTab] = useState<'login' | 'register' | 'trial' | 'admin'>('login');
 
-  // Redirection on logout or unauthorized tab
+  // Redirection: jika belum login, hanya beranda yang diizinkan
   useEffect(() => {
-    if (!currentUser && (currentTab === 'admin' || currentTab === 'instruktur' || currentTab === 'sheets')) {
+    if (!currentUser && currentTab !== 'home') {
       setCurrentTab('home');
     }
   }, [currentUser, currentTab]);
@@ -79,54 +80,66 @@ function MainLayout() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {currentTab === 'home' && (
+        {!currentUser ? (
+          // SEBELUM LOGIN: HANYA BERANDA YANG TAMPIL
           <HomeView
             onOpenAuth={handleOpenAuth}
-            onNavigateToMaterials={() => setCurrentTab('materi')}
-            onNavigateToStudios={() => setCurrentTab('studios')}
+            onNavigateToMaterials={() => handleOpenAuth('login')}
+            onNavigateToStudios={() => handleOpenAuth('login')}
           />
-        )}
+        ) : (
+          // SETELAH LOGIN: SEMUA FITUR (MATERI, STUDIO, LEADERBOARD, DLL) TERBUKA
+          <>
+            {currentTab === 'home' && (
+              <HomeView
+                onOpenAuth={handleOpenAuth}
+                onNavigateToMaterials={() => setCurrentTab('materi')}
+                onNavigateToStudios={() => setCurrentTab('studios')}
+              />
+            )}
 
-        {currentTab === 'materi' && (
-          <LearningPath
-            onSelectMaterial={openMaterial}
-            onOpenAuth={handleOpenAuth}
-          />
-        )}
+            {currentTab === 'materi' && (
+              <LearningPath
+                onSelectMaterial={openMaterial}
+                onOpenAuth={handleOpenAuth}
+              />
+            )}
 
-        {currentTab === 'studios' && <StudioView />}
+            {currentTab === 'studios' && <StudioView />}
 
-        {currentTab === 'leaderboard' && <Leaderboard />}
+            {currentTab === 'leaderboard' && <Leaderboard />}
 
-        {currentTab === 'admin' && <AdminPanel />}
+            {currentTab === 'admin' && <AdminPanel />}
 
-        {currentTab === 'instruktur' && <InstructorPanel />}
+            {currentTab === 'instruktur' && <InstructorPanel />}
 
-        {/* Tabel Database Pengguna HANYA DAPAT DIAKSES OLEH ADMIN */}
-        {currentTab === 'sheets' && (
-          currentUser?.role === 'admin' ? (
-            <SheetsView />
-          ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 sm:p-12 text-center max-w-lg mx-auto shadow-sm my-12">
-              <div className="w-16 h-16 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4 border border-rose-200 dark:border-rose-800">
-                <Lock className="w-8 h-8" />
-              </div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Akses Terbatas: Khusus Admin
-              </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                Halaman <strong>Tabel Database Pengguna</strong> hanya dapat diakses dan dikelola secara langsung oleh akun Administrator (Kepala Instruktur Pak Guru Luky).
-              </p>
-              <div className="mt-6 flex justify-center gap-3">
-                <button
-                  onClick={() => setCurrentTab('materi')}
-                  className="px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-xs"
-                >
-                  Kembali ke Materi Belajar
-                </button>
-              </div>
-            </div>
-          )
+            {/* Tabel Database Pengguna HANYA DAPAT DIAKSES OLEH ADMIN */}
+            {currentTab === 'sheets' && (
+              currentUser?.role === 'admin' ? (
+                <SheetsView />
+              ) : (
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 sm:p-12 text-center max-w-lg mx-auto shadow-sm my-12">
+                  <div className="w-16 h-16 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4 border border-rose-200 dark:border-rose-800">
+                    <Lock className="w-8 h-8" />
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                    Akses Terbatas: Khusus Admin
+                  </h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                    Halaman <strong>Tabel Database Pengguna</strong> hanya dapat diakses dan dikelola secara langsung oleh akun Administrator (Kepala Instruktur Pak Guru Luky).
+                  </p>
+                  <div className="mt-6 flex justify-center gap-3">
+                    <button
+                      onClick={() => setCurrentTab('materi')}
+                      className="px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-xs"
+                    >
+                      Kembali ke Materi Belajar
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+          </>
         )}
       </main>
 
@@ -135,6 +148,7 @@ function MainLayout() {
         material={selectedMaterial}
         onClose={() => openMaterial(null)}
         onOpenStudio={handleOpenStudioFromModal}
+        onOpenAuth={handleOpenAuth}
       />
 
       <AuthModal
@@ -154,6 +168,9 @@ function MainLayout() {
         user={viewingReportUser}
         onClose={() => setViewingReportUser(null)}
       />
+
+      {/* Floating Interactive Toast Feedback System */}
+      <ToastNotification />
 
       {/* Modern High-End Footer */}
       <footer className="bg-slate-900 text-slate-400 text-xs border-t border-slate-800 mt-12 py-8">
@@ -217,7 +234,7 @@ function MainLayout() {
             {/* User Requested Copyright */}
             <div className="text-center sm:text-right">
               <p className="font-semibold text-slate-300 text-xs">
-                @copyright by. Pak GuruAI
+                @copyright by. Pak Guru Luky
               </p>
               <p className="text-[10px] text-slate-500 mt-0.5">
                 © {new Date().getFullYear()} GenZi Code. Dikembangkan khusus untuk instruktur & siswa coding anak masa kini.
