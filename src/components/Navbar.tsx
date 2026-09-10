@@ -40,7 +40,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     logout,
     users,
     getCompletionPercentage,
-    openStudio,
     darkMode,
     toggleDarkMode,
     setViewingCertificateUser,
@@ -114,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     AI EdTech
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden sm:block">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden xl:block">
                   Belajar Coding & AI Mandiri Berjenjang
                 </p>
               </div>
@@ -122,17 +121,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Center Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-1 lg:gap-1.5">
             <button
               onClick={() => setCurrentTab('home')}
-              className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+              className={`px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
                 currentTab === 'home'
-                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              <Home className="w-4 h-4" />
-              Beranda
+              <Home className="w-4 h-4 shrink-0" />
+              <span>Beranda</span>
             </button>
 
             {/* Materi, 4 Studio Coding, dan Leaderboard HANYA MUNCUL SETELAH LOGIN */}
@@ -140,70 +139,38 @@ export const Navbar: React.FC<NavbarProps> = ({
               <>
                 <button
                   onClick={() => setCurrentTab('materi')}
-                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+                  className={`px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
                     currentTab === 'materi'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <Layers className="w-4 h-4" />
-                  Materi Berjenjang
+                  <Layers className="w-4 h-4 shrink-0" />
+                  <span>Materi<span className="hidden xl:inline"> Berjenjang</span></span>
                 </button>
 
                 <button
                   onClick={() => setCurrentTab('studios')}
-                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+                  className={`px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
                     currentTab === 'studios'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <Laptop className="w-4 h-4" />
-                  4 Studio Coding
+                  <Laptop className="w-4 h-4 shrink-0" />
+                  <span>4 Studio<span className="hidden xl:inline"> Coding</span></span>
                 </button>
-
-                {/* Quick studio shortcuts */}
-                <div className="flex items-center gap-1 pl-1 border-l border-slate-200 dark:border-slate-800 ml-1">
-                  <button
-                    onClick={() => openStudio('scratch')}
-                    title="Buka Scratch Studio"
-                    className="px-2 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded border border-amber-200 dark:border-amber-800"
-                  >
-                    Scratch
-                  </button>
-                  <button
-                    onClick={() => openStudio('microbit')}
-                    title="Buka Micro:bit Studio"
-                    className="px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded border border-emerald-200 dark:border-emerald-800"
-                  >
-                    Micro:bit
-                  </button>
-                  <button
-                    onClick={() => openStudio('pictoblox')}
-                    title="Buka PictoBlox AI Studio"
-                    className="px-2 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded border border-blue-200 dark:border-blue-800"
-                  >
-                    PictoBlox AI
-                  </button>
-                  <button
-                    onClick={() => openStudio('codecombat')}
-                    title="Buka CodeCombat RPG Studio (Python & JavaScript)"
-                    className="px-2 py-1 text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded border border-rose-200 dark:border-rose-800"
-                  >
-                    CodeCombat
-                  </button>
-                </div>
 
                 {/* Leaderboard Button */}
                 <button
                   onClick={() => setCurrentTab('leaderboard')}
-                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 ml-1 ${
+                  className={`px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
                     currentTab === 'leaderboard'
                       ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <Trophy className="w-4 h-4 text-amber-500" />
+                  <Trophy className="w-4 h-4 text-amber-500 shrink-0" />
                   <span>Leaderboard</span>
                 </button>
               </>
@@ -213,20 +180,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             {(currentUser?.role === 'admin' || currentUser?.role === 'instruktur') && (
               <button
                 onClick={() => setCurrentTab(currentUser?.role === 'admin' ? 'admin' : 'instruktur')}
-                className={`relative px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 ml-1 ${
+                className={`relative px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
                   currentTab === 'admin' || currentTab === 'instruktur'
-                    ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                    ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shadow-xs'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 {currentUser?.role === 'admin' ? (
-                  <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                  <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                 ) : (
-                  <GraduationCap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <GraduationCap className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 )}
-                <span>{currentUser?.role === 'admin' ? 'Panel Admin' : 'Panel Instruktur'}</span>
+                <span><span className="hidden xl:inline">Panel </span>{currentUser?.role === 'admin' ? 'Admin' : 'Instruktur'}</span>
                 {currentUser?.role === 'admin' && pendingCount > 0 && (
-                  <span className="w-5 h-5 flex items-center justify-center rounded-full bg-rose-600 text-white text-[10px] font-bold">
+                  <span className="w-4 h-4 flex items-center justify-center rounded-full bg-rose-600 text-white text-[9px] font-bold shrink-0">
                     {pendingCount}
                   </span>
                 )}
@@ -238,14 +205,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={() => setCurrentTab('sheets')}
                 title="Tabel Database Pengguna & Siswa (Khusus Admin)"
-                className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 ${
+                className={`px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
                   currentTab === 'sheets'
-                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 shadow-xs'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
-                <Table className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span className="hidden lg:inline">Tabel Database</span>
+                <Table className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <span><span className="hidden xl:inline">Tabel </span>Database</span>
               </button>
             )}
           </nav>
@@ -287,8 +254,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0">
                       {currentUser.name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="text-left hidden sm:block">
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1 max-w-[120px]">
+                    <div className="text-left hidden lg:block">
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1 max-w-[100px] xl:max-w-[140px]">
                         {currentUser.name}
                       </p>
                       <div className="flex items-center gap-1">
@@ -386,70 +353,85 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Tab Bar - HANYA MUNCUL JIKA SUDAH LOGIN */}
       {currentUser && (
-        <div className="md:hidden flex items-center overflow-x-auto whitespace-nowrap gap-1.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-900/95 px-2.5 py-1.5 text-xs font-semibold scrollbar-none">
+        <div className="md:hidden flex items-center overflow-x-auto whitespace-nowrap gap-1.5 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur px-2.5 py-2 text-xs font-semibold scrollbar-none shadow-xs">
           <button
             onClick={() => setCurrentTab('home')}
-            className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
+            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
               currentTab === 'home'
-                ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            Beranda
+            <Home className="w-3.5 h-3.5 shrink-0" />
+            <span>Beranda</span>
           </button>
           <button
             onClick={() => setCurrentTab('materi')}
-            className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
+            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
               currentTab === 'materi'
-                ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            Materi
+            <Layers className="w-3.5 h-3.5 shrink-0" />
+            <span>Materi</span>
           </button>
           <button
             onClick={() => setCurrentTab('studios')}
-            className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
+            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
               currentTab === 'studios'
-                ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            4 Studio
+            <Laptop className="w-3.5 h-3.5 shrink-0" />
+            <span>4 Studio</span>
           </button>
           <button
             onClick={() => setCurrentTab('leaderboard')}
-            className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
+            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
               currentTab === 'leaderboard'
-                ? 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                ? 'bg-amber-500 text-white font-bold shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            Juara
+            <Trophy className="w-3.5 h-3.5 shrink-0" />
+            <span>Leaderboard</span>
           </button>
           {(currentUser.role === 'admin' || currentUser.role === 'instruktur') && (
             <button
               onClick={() => setCurrentTab(currentUser.role === 'admin' ? 'admin' : 'instruktur')}
-              className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
+              className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
                 currentTab === 'admin' || currentTab === 'instruktur'
-                  ? 'bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  ? 'bg-rose-600 text-white font-bold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              {currentUser.role === 'admin' ? `Admin (${pendingCount})` : 'Instruktur'}
+              {currentUser.role === 'admin' ? (
+                <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+              ) : (
+                <GraduationCap className="w-3.5 h-3.5 shrink-0" />
+              )}
+              <span>{currentUser.role === 'admin' ? 'Admin' : 'Instruktur'}</span>
+              {currentUser.role === 'admin' && pendingCount > 0 && (
+                <span className="w-4 h-4 flex items-center justify-center rounded-full bg-white text-rose-700 text-[9px] font-black shrink-0">
+                  {pendingCount}
+                </span>
+              )}
             </button>
           )}
           {/* Only Admin can see Sheets DB on mobile */}
           {currentUser.role === 'admin' && (
             <button
               onClick={() => setCurrentTab('sheets')}
-              className={`px-3 py-1.5 shrink-0 text-center rounded-lg transition-colors ${
+              className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
                 currentTab === 'sheets'
-                  ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              Sheets DB
+              <Table className="w-3.5 h-3.5 shrink-0" />
+              <span>Tabel DB</span>
             </button>
           )}
         </div>
