@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "User profile and progress in GenZi Code platform",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "instruktur", "siswa", "trial"] },
+        "status": { "type": "string", "enum": ["active", "pending", "rejected"] },
+        "registeredAt": { "type": "string" },
+        "approvedAt": { "type": "string" },
+        "approvedBy": { "type": "string" },
+        "duration": { "type": "string" },
+        "completedMaterialIds": { "type": "array" },
+        "school": { "type": "string" },
+        "phone": { "type": "string" },
+        "notes": { "type": "string" },
+        "quizScore": { "type": "number" },
+        "quizCount": { "type": "number" },
+        "xp": { "type": "number" },
+        "badges": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "role", "status"]
+    },
+    "StudioProject": {
+      "title": "StudioProject",
+      "description": "Saved user project in Coding Studios",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studioType": { "type": "string", "enum": ["scratch", "pictoblox", "microbit"] },
+        "title": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "content": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "studioType", "title"]
+    }
+  },
+  "firestore": {
+    "/genzi_users/{userId}": {
+      "schema": "UserAccount",
+      "description": "Registered students, instructors, and admin accounts"
+    },
+    "/genzi_projects/{projectId}": {
+      "schema": "StudioProject",
+      "description": "User created projects from Scratch, PictoBlox, and Microbit studios"
+    }
+  }
+}

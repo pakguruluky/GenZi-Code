@@ -4,36 +4,40 @@ import {
   collection,
   doc,
   setDoc,
-  getDoc,
   getDocs,
   updateDoc,
   deleteDoc,
   Firestore
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import firebaseAppletConfig from '../../firebase-applet-config.json';
 import { UserAccount } from '../types';
 
 export const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyB-2tojeBZzd6wMpYqNt2a-JAjdy13qFmo",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "genzi-code.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "genzi-code",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "genzi-code.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "427113407352",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:427113407352:web:346494697939e0749c1e8d"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseAppletConfig.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseAppletConfig.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseAppletConfig.projectId,
+  firestoreDatabaseId: import.meta.env.VITE_FIRESTORE_DATABASE_ID || firebaseAppletConfig.firestoreDatabaseId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseAppletConfig.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseAppletConfig.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseAppletConfig.appId,
 };
 
 // Initialize Cloud Database
 let app: any = null;
 let db: Firestore | null = null;
+let auth: any = null;
 
 try {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  db = getFirestore(app);
+  db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+  auth = getAuth(app);
 } catch (initErr) {
   console.warn('Database initialization note (using local cache mode):', initErr);
 }
 
 export const getDb = (): Firestore | null => db;
-export { app, db };
+export { app, db, auth };
 
 const USERS_COLLECTION = 'genzi_users';
 const PROJECTS_COLLECTION = 'genzi_projects';
