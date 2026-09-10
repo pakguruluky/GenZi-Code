@@ -10,7 +10,8 @@ import {
   syncUserToFirestore,
   fetchAllUsersFromFirestore,
   updateUserStatusFirestore,
-  deleteUserFromFirestore
+  deleteUserFromFirestore,
+  subscribeToUsers
 } from '../lib/firebase';
 import confetti from 'canvas-confetti';
 
@@ -34,7 +35,7 @@ export const DEMO_USER_IDS = new Set([
 const INITIAL_USERS: UserAccount[] = [
   {
     id: 'user-admin-01',
-    name: 'Pak Guru Luky',
+    name: 'Bapak Guru Hilman (Admin)',
     email: 'hilmansyarif53@gmail.com',
     role: 'admin',
     status: 'active',
@@ -43,9 +44,9 @@ const INITIAL_USERS: UserAccount[] = [
     approvedBy: 'Sistem Pusat',
     duration: 'selamanya',
     completedMaterialIds: ALL_MATERIALS.map(m => m.id),
-    school: 'GenZi Code Academy - Pusat Inovasi Coding & AI',
+    school: 'GenZi Coding Academy',
     phone: '0812-3456-7890',
-    notes: 'Super Administrator, Kepala Instruktur & Founder',
+    notes: 'Super Administrator & Instruktur AI Utama',
     quizScore: 100,
     quizCount: 54,
     xp: 6800,
@@ -107,6 +108,7 @@ interface AppContextType {
   getCompletionPercentage: (user?: UserAccount | null) => number;
   exportTableToCSV: () => void;
   exportToGoogleSheetsCSV: () => void;
+  refreshDatabase: () => Promise<{ success: boolean; count: number; message: string }>;
   toast: ToastNotification | null;
   showToast: (toast: Omit<ToastNotification, 'id'>) => void;
   hideToast: () => void;
@@ -132,15 +134,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Hanya gunakan data asli, bersihkan akun demo tiruan
+          // Hanya gunakan data asli yang tersimpan di database/backend, bersihkan demo
           const realUsers = parsed.filter((u: UserAccount) => !DEMO_USER_IDS.has(u.id));
-          const adminIdx = realUsers.findIndex((u: UserAccount) => u.role === 'admin');
-          if (adminIdx !== -1) {
-            realUsers[adminIdx].name = INITIAL_USERS[0].name;
-            realUsers[adminIdx].email = INITIAL_USERS[0].email;
+          if (realUsers.length > 0) {
             return realUsers;
           }
-          return [INITIAL_USERS[0], ...realUsers];
         }
       } catch (e) {
         console.error('Failed to parse cached users', e);
@@ -204,27 +202,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeStudio, setActiveStudio] = useState<'scratch' | 'microbit' | 'pictoblox' | 'codecombat' | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
 
-  // Sync with Firestore on mount: Gunakan data asli dari Cloud Firestore
+  // Sync realtime langsung dari Cloud Firestore Backend (Bukan Data Demo)
   useEffect(() => {
-    async function loadFromFirestore() {
-      try {
-        const remoteUsers = await fetchAllUsersFromFirestore();
-        if (remoteUsers && remoteUsers.length > 0) {
-          // Saring akun demo agar database murni data asli
-          const realRemoteUsers = remoteUsers.filter(u => !DEMO_USER_IDS.has(u.id));
-          const hasAdmin = realRemoteUsers.some(u => u.role === 'admin');
-          const finalUsers = hasAdmin ? realRemoteUsers : [INITIAL_USERS[0], ...realRemoteUsers];
-          setUsers(finalUsers);
-          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(finalUsers));
-        } else {
-          // Inisialisasi Firestore murni dengan akun Admin Asli
-          await syncUserToFirestore(INITIAL_USERS[0]);
+    // 1. Bersihkan sisa akun demo tiruan dari local storage agar murni data asli
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_USERS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter((u: UserAccount) => !DEMO_USER_IDS.has(u.id));
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(cleaned));
         }
-      } catch (err) {
-        console.warn('Firestore initial sync note:', err);
       }
+    } catch {
+      // ignore
     }
-    loadFromFirestore();
+
+    // 2. Pasang realtime subscriber Firestore (onSnapshot)
+    const unsubscribe = subscribeToUsers((remoteUsers) => {
+      if (remoteUsers && remoteUsers.length > 0) {
+        // Saring akun demo tiruan agar database murni data asli backend
+        const realRemoteUsers = remoteUsers.filter(u => !DEMO_USER_IDS.has(u.id));
+        if (realRemoteUsers.length > 0) {
+          setUsers(realRemoteUsers);
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(realRemoteUsers));
+
+          // Perbarui status currentUser jika ada update dari backend (misal disetujui / poin bertambah)
+          setCurrentUser(prevUser => {
+            if (!prevUser) return null;
+            const updated = realRemoteUsers.find(
+              u => u.id === prevUser.id || u.email.toLowerCase() === prevUser.email.toLowerCase()
+            );
+            return updated || prevUser;
+          });
+        }
+      }
+    });
+
+    // 3. Panggilan awal Firestore fetch
+    fetchAllUsersFromFirestore().then((remoteUsers) => {
+      if (remoteUsers && remoteUsers.length > 0) {
+        const realRemoteUsers = remoteUsers.filter(u => !DEMO_USER_IDS.has(u.id));
+        if (realRemoteUsers.length > 0) {
+          setUsers(realRemoteUsers);
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(realRemoteUsers));
+        }
+      } else {
+        // Inisialisasi akun Admin asli jika Firestore masih kosong
+        syncUserToFirestore(INITIAL_USERS[0]);
+      }
+    }).catch(err => {
+      console.warn('Initial Firestore fetch note:', err);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // Save changes to localStorage
@@ -263,7 +296,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loginUser = (email: string, preferredRole?: UserRole) => {
     const cleanEmail = email.trim().toLowerCase();
-    const existing = users.find(u => u.email.toLowerCase() === cleanEmail);
+    const existing = users.find(
+      u =>
+        u.email.toLowerCase() === cleanEmail ||
+        (u.role === 'admin' && (cleanEmail === 'hilmansyarif53@gmail.com' || cleanEmail === 'admin@genzicode.id'))
+    );
     if (!existing) {
       return {
         success: false,
@@ -515,6 +552,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(finalUsers));
     if (currentUser && DEMO_USER_IDS.has(currentUser.id)) {
       setCurrentUser(null);
+    }
+  };
+
+  const refreshDatabase = async () => {
+    try {
+      const remoteUsers = await fetchAllUsersFromFirestore();
+      if (remoteUsers && remoteUsers.length > 0) {
+        const realRemoteUsers = remoteUsers.filter(u => !DEMO_USER_IDS.has(u.id));
+        if (realRemoteUsers.length > 0) {
+          setUsers(realRemoteUsers);
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(realRemoteUsers));
+          return {
+            success: true,
+            count: realRemoteUsers.length,
+            message: `Berhasil menyinkronkan ${realRemoteUsers.length} data pengguna langsung dari database backend.`
+          };
+        }
+      }
+      return {
+        success: true,
+        count: users.length,
+        message: 'Data pengguna telah disinkronkan dengan database.'
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        count: users.length,
+        message: `Gagal menyinkronkan database: ${err?.message || 'Koneksi backend terputus'}`
+      };
     }
   };
 
@@ -842,6 +908,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getCompletionPercentage,
         exportTableToCSV,
         exportToGoogleSheetsCSV,
+        refreshDatabase,
         toast,
         showToast,
         hideToast

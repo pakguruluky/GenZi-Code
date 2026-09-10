@@ -20,6 +20,7 @@ import {
   Download,
   RotateCcw,
   Trash2,
+  RefreshCw,
   CheckCircle2,
   Clock,
   Search,
@@ -42,6 +43,7 @@ export const AdminPanel: React.FC = () => {
     updateUserDuration,
     deleteUser,
     clearDemoData,
+    refreshDatabase,
     resetUserProgress,
     getCompletionPercentage,
     exportTableToCSV,
@@ -53,6 +55,7 @@ export const AdminPanel: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [isClearingDemo, setIsClearingDemo] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Form states
   const [studentForm, setStudentForm] = useState<{
@@ -151,6 +154,20 @@ export const AdminPanel: React.FC = () => {
               <Database className="w-3.5 h-3.5 text-emerald-600" />
               <span>Data Asli Database</span>
             </div>
+            <button
+              onClick={async () => {
+                setIsRefreshing(true);
+                const res = await refreshDatabase();
+                setIsRefreshing(false);
+                showFeedback(res.message);
+              }}
+              disabled={isRefreshing}
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs"
+              title="Sinkronkan data langsung dari Cloud Firestore Backend"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>{isRefreshing ? 'Menyinkronkan...' : 'Sinkronkan Database'}</span>
+            </button>
             <button
               onClick={() => setActiveTab('sheets_db')}
               className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs"

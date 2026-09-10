@@ -7,6 +7,7 @@ import {
   getDocs,
   updateDoc,
   deleteDoc,
+  onSnapshot,
   Firestore
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -132,3 +133,28 @@ export async function deleteUserFromFirestore(userId: string): Promise<void> {
     console.warn('Database delete notice:', error);
   }
 }
+
+export function subscribeToUsers(onUpdate: (users: UserAccount[]) => void): () => void {
+  if (!db) return () => {};
+  try {
+    const unsub = onSnapshot(
+      collection(db, USERS_COLLECTION),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => doc.data() as UserAccount);
+          onUpdate(list);
+        } else {
+          onUpdate([]);
+        }
+      },
+      (error) => {
+        console.warn('Realtime database listener notice:', error);
+      }
+    );
+    return unsub;
+  } catch (err) {
+    console.warn('Failed to subscribe to database updates:', err);
+    return () => {};
+  }
+}
+

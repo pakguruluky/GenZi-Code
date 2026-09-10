@@ -15,6 +15,7 @@ import {
   Download,
   UserPlus,
   Trash2,
+  RefreshCw,
   RotateCcw,
   CheckCircle2,
   Clock,
@@ -51,8 +52,11 @@ export const DatabaseTableView: React.FC = () => {
     updateUserDuration,
     setViewingCertificateUser,
     setViewingReportUser,
-    clearDemoData
+    clearDemoData,
+    refreshDatabase
   } = useApp();
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Search, filter, sorting states
   const [searchQuery, setSearchQuery] = useState('');
@@ -267,6 +271,21 @@ export const DatabaseTableView: React.FC = () => {
             >
               <UserPlus className="w-4 h-4" />
               <span>Tambah Siswa Baru</span>
+            </button>
+
+            <button
+              onClick={async () => {
+                setIsRefreshing(true);
+                const res = await refreshDatabase();
+                setIsRefreshing(false);
+                showNotification(res.message);
+              }}
+              disabled={isRefreshing}
+              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-colors flex items-center gap-1.5"
+              title="Sinkronkan data langsung dari Cloud Firestore Backend"
+            >
+              <RefreshCw className={`w-4 h-4 text-emerald-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>{isRefreshing ? 'Menyinkronkan...' : 'Sinkronkan Database'}</span>
             </button>
 
             <button
