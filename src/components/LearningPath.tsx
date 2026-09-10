@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ALL_MATERIALS } from '../data/curriculumData';
 import { Material, MaterialCategory } from '../types';
 import { useApp } from '../context/AppContext';
@@ -24,7 +25,13 @@ import {
   ExternalLink,
   WifiOff,
   BookmarkCheck,
-  HardDrive
+  HardDrive,
+  TrendingUp,
+  Zap,
+  Code2,
+  Cpu,
+  Bot,
+  Swords
 } from 'lucide-react';
 
 interface LearningPathProps {
@@ -55,6 +62,51 @@ export const LearningPath: React.FC<LearningPathProps> = ({
 
   const offlineSavedList = getOfflineMaterials();
   const offlineIds = new Set(offlineSavedList.map(o => o.id));
+  const completedIds = new Set(currentUser?.completedMaterialIds || []);
+
+  // Category progress breakdowns for animated mini-trackers
+  const categoryProgress = [
+    {
+      id: 'scratch',
+      name: 'Scratch 3.0',
+      icon: Code2,
+      total: ALL_MATERIALS.filter(m => m.category === 'Scratch').length,
+      completed: ALL_MATERIALS.filter(m => m.category === 'Scratch' && completedIds.has(m.id)).length,
+      color: 'from-amber-500 to-amber-600',
+      textColor: 'text-amber-600 dark:text-amber-400',
+      bgLight: 'bg-amber-500/10 border-amber-200 dark:border-amber-800'
+    },
+    {
+      id: 'microbit',
+      name: 'BBC Micro:bit',
+      icon: Cpu,
+      total: ALL_MATERIALS.filter(m => m.category === 'Microbit').length,
+      completed: ALL_MATERIALS.filter(m => m.category === 'Microbit' && completedIds.has(m.id)).length,
+      color: 'from-emerald-500 to-emerald-600',
+      textColor: 'text-emerald-600 dark:text-emerald-400',
+      bgLight: 'bg-emerald-500/10 border-emerald-200 dark:border-emerald-800'
+    },
+    {
+      id: 'pictoblox',
+      name: 'PictoBlox AI',
+      icon: Bot,
+      total: ALL_MATERIALS.filter(m => m.category === 'Pictoblox').length,
+      completed: ALL_MATERIALS.filter(m => m.category === 'Pictoblox' && completedIds.has(m.id)).length,
+      color: 'from-blue-500 to-indigo-600',
+      textColor: 'text-blue-600 dark:text-blue-400',
+      bgLight: 'bg-blue-500/10 border-blue-200 dark:border-blue-800'
+    },
+    {
+      id: 'codecombat',
+      name: 'CodeCombat & Game',
+      icon: Swords,
+      total: ALL_MATERIALS.filter(m => m.category === 'CodeCombat' || m.category === 'Game Logika (SpriteLab)' || m.category === 'MakeCode Arcade' || m.category === 'Unplugged').length,
+      completed: ALL_MATERIALS.filter(m => (m.category === 'CodeCombat' || m.category === 'Game Logika (SpriteLab)' || m.category === 'MakeCode Arcade' || m.category === 'Unplugged') && completedIds.has(m.id)).length,
+      color: 'from-rose-500 to-pink-600',
+      textColor: 'text-rose-600 dark:text-rose-400',
+      bgLight: 'bg-rose-500/10 border-rose-200 dark:border-rose-800'
+    },
+  ];
 
   // Filter materials
   const filteredMaterials = ALL_MATERIALS.filter(m => {
@@ -127,31 +179,117 @@ export const LearningPath: React.FC<LearningPathProps> = ({
             </p>
           </div>
 
-          {/* Progress Card */}
-          <div className="bg-gradient-to-br from-indigo-50 to-slate-50 dark:from-slate-800/80 dark:to-slate-900/80 border border-indigo-100 dark:border-slate-700 rounded-2xl p-4 sm:p-5 min-w-[280px]">
+          {/* Animated Progress Card */}
+          <div className="bg-gradient-to-br from-indigo-50/90 via-slate-50 to-purple-50/50 dark:from-slate-800/90 dark:via-slate-900/90 dark:to-indigo-950/40 border border-indigo-100 dark:border-slate-700/80 rounded-2xl p-5 min-w-[320px] lg:max-w-md w-full shadow-xs">
             <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                Pencapaian Belajar
-              </span>
-              <span className="text-lg font-black text-indigo-700 dark:text-indigo-400">
-                {completionPercent}%
-              </span>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-600/10 dark:bg-indigo-400/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                    Pencapaian Belajar
+                  </span>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    {completedCount} dari {ALL_MATERIALS.length} Modul Selesai
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-2xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
+                  {completionPercent}%
+                </span>
+                <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                  {completionPercent === 100 ? '🎉 Lulus Penuh' : completionPercent >= 50 ? '⚡ Menengah' : '🌱 Pemula'}
+                </span>
+              </div>
             </div>
 
-            {/* Progress bar */}
-            <div className="w-full bg-slate-200 dark:bg-slate-700 h-3 rounded-full overflow-hidden p-0.5">
-              <div
-                className="bg-gradient-to-r from-indigo-600 via-blue-500 to-emerald-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${completionPercent}%` }}
-              />
+            {/* Animated Interactive Progress Bar with Shimmer & Glow */}
+            <div className="relative mt-3">
+              <div className="w-full bg-slate-200/90 dark:bg-slate-700/80 h-4 rounded-full overflow-hidden p-0.5 relative shadow-inner">
+                {/* Milestone tick marks at 25%, 50%, 75% */}
+                <div className="absolute inset-0 flex justify-between px-[25%] pointer-events-none z-10">
+                  <div className="w-0.5 h-full bg-white/50 dark:bg-slate-800/60" title="Milestone 25%" />
+                  <div className="w-0.5 h-full bg-white/50 dark:bg-slate-800/60" title="Milestone 50%" />
+                  <div className="w-0.5 h-full bg-white/50 dark:bg-slate-800/60" title="Milestone 75%" />
+                </div>
+
+                {/* Animated fill track using motion.div */}
+                <motion.div
+                  className="bg-gradient-to-r from-indigo-600 via-blue-500 to-emerald-500 h-full rounded-full relative overflow-hidden flex items-center justify-end"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(completionPercent, 0)}%` }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 45,
+                    damping: 14,
+                    mass: 0.8
+                  }}
+                >
+                  {/* Moving shimmer light reflection */}
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-full h-full"
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 2.2,
+                      ease: 'linear'
+                    }}
+                  />
+
+                  {/* Leading glow pulse dot at the tip of progress */}
+                  {completionPercent > 0 && (
+                    <motion.div
+                      className="w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_8px_#ffffff] mr-0.5 shrink-0 z-20"
+                      animate={{ scale: [1, 1.3, 1], opacity: [0.85, 1, 0.85] }}
+                      transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+                    />
+                  )}
+                </motion.div>
+              </div>
+
+              {/* Milestone labels */}
+              <div className="flex justify-between text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-1.5 px-0.5">
+                <span>0%</span>
+                <span className={completionPercent >= 25 ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ''}>25% Logika</span>
+                <span className={completionPercent >= 50 ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>50% IoT</span>
+                <span className={completionPercent >= 75 ? 'text-purple-600 dark:text-purple-400 font-bold' : ''}>75% AI</span>
+                <span className={completionPercent >= 100 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}>100% Lulus</span>
+              </div>
             </div>
 
-            <div className="mt-2.5 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>{completedCount} dari {ALL_MATERIALS.length} Selesai</span>
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                {currentUser?.role?.toUpperCase()}
-              </span>
+            {/* Category Mini Animated Progress Bars */}
+            <div className="grid grid-cols-2 gap-2 mt-3.5 pt-3 border-t border-slate-200/80 dark:border-slate-700/80">
+              {categoryProgress.map(cat => {
+                const Icon = cat.icon;
+                const catPercent = cat.total > 0 ? Math.round((cat.completed / cat.total) * 100) : 0;
+                return (
+                  <div
+                    key={cat.id}
+                    className={`p-2 rounded-xl border ${cat.bgLight} transition-all`}
+                  >
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 truncate">
+                        <Icon className={`w-3 h-3 ${cat.textColor}`} />
+                        <span className="truncate">{cat.name}</span>
+                      </span>
+                      <span className={`text-[10px] font-black ${cat.textColor}`}>
+                        {cat.completed}/{cat.total}
+                      </span>
+                    </div>
+                    {/* Animated mini fill track */}
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                      <motion.div
+                        className={`bg-gradient-to-r ${cat.color} h-full rounded-full`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${catPercent}%` }}
+                        transition={{ type: 'spring', stiffness: 50, damping: 15 }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Student Certificate & HTML Report Quick Triggers */}

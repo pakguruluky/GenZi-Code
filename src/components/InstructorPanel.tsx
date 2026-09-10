@@ -12,7 +12,16 @@ import {
   Search,
   ExternalLink,
   RotateCcw,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Trophy,
+  TrendingUp,
+  Zap,
+  Code2,
+  Cpu,
+  Bot,
+  Swords,
+  PieChart,
+  ChevronRight
 } from 'lucide-react';
 
 export const InstructorPanel: React.FC = () => {
@@ -31,7 +40,108 @@ export const InstructorPanel: React.FC = () => {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
   const students = users.filter(u => u.role === 'siswa' && u.status === 'active');
+  const totalRegisteredStudents = users.filter(u => u.role === 'siswa');
+  const trialUsers = users.filter(u => u.role === 'trial');
   const selectedStudent = students.find(s => s.id === selectedStudentId) || students[0];
+
+  // Studio popularity analysis across all users
+  const studioStats = [
+    {
+      id: 'scratch' as const,
+      name: 'Scratch 3.0 Logic Studio',
+      shortName: 'Scratch 3.0',
+      icon: Code2,
+      categoryNames: ['Scratch'],
+      accentText: 'text-amber-600 dark:text-amber-400',
+      accentBg: 'bg-amber-500/10 border-amber-200 dark:border-amber-800',
+      barColor: 'bg-amber-500',
+      completedCount: 0,
+      activeUserCount: 0
+    },
+    {
+      id: 'microbit' as const,
+      name: 'BBC Micro:bit IoT Simulator',
+      shortName: 'BBC Micro:bit',
+      icon: Cpu,
+      categoryNames: ['Microbit', 'MakeCode Arcade'],
+      accentText: 'text-emerald-600 dark:text-emerald-400',
+      accentBg: 'bg-emerald-500/10 border-emerald-200 dark:border-emerald-800',
+      barColor: 'bg-emerald-500',
+      completedCount: 0,
+      activeUserCount: 0
+    },
+    {
+      id: 'pictoblox' as const,
+      name: 'PictoBlox AI & ML Studio',
+      shortName: 'PictoBlox AI',
+      icon: Bot,
+      categoryNames: ['Pictoblox'],
+      accentText: 'text-blue-600 dark:text-blue-400',
+      accentBg: 'bg-blue-500/10 border-blue-200 dark:border-blue-800',
+      barColor: 'bg-blue-500',
+      completedCount: 0,
+      activeUserCount: 0
+    },
+    {
+      id: 'codecombat' as const,
+      name: 'CodeCombat RPG Dungeon',
+      shortName: 'CodeCombat RPG',
+      icon: Swords,
+      categoryNames: ['CodeCombat', 'Game Logika (SpriteLab)', 'Unplugged'],
+      accentText: 'text-rose-600 dark:text-rose-400',
+      accentBg: 'bg-rose-500/10 border-rose-200 dark:border-rose-800',
+      barColor: 'bg-rose-500',
+      completedCount: 0,
+      activeUserCount: 0
+    }
+  ];
+
+  // Map materials to studio categories
+  const materialStudioLookup = new Map<string, string>();
+  ALL_MATERIALS.forEach(m => {
+    for (const st of studioStats) {
+      if (st.categoryNames.includes(m.category)) {
+        materialStudioLookup.set(m.id, st.id);
+        break;
+      }
+    }
+  });
+
+  // Calculate completions and active learners per studio across all users
+  users.forEach(user => {
+    if (!user.completedMaterialIds || user.completedMaterialIds.length === 0) return;
+    const userStudios = new Set<string>();
+    user.completedMaterialIds.forEach(id => {
+      const studioId = materialStudioLookup.get(id);
+      if (studioId) {
+        const found = studioStats.find(s => s.id === studioId);
+        if (found) {
+          found.completedCount++;
+          userStudios.add(studioId);
+        }
+      }
+    });
+    userStudios.forEach(sId => {
+      const found = studioStats.find(s => s.id === sId);
+      if (found) found.activeUserCount++;
+    });
+  });
+
+  // Sort by completedCount descending, secondary by activeUserCount
+  const sortedStudios = [...studioStats].sort((a, b) => {
+    if (b.completedCount !== a.completedCount) return b.completedCount - a.completedCount;
+    return b.activeUserCount - a.activeUserCount;
+  });
+  const mostPopularStudio = sortedStudios[0] || studioStats[0];
+  const totalStudioCompletions = studioStats.reduce((acc, s) => acc + s.completedCount, 0);
+
+  // Average completion rate among active students
+  const avgCompletionRate = students.length > 0
+    ? Math.round(students.reduce((acc, s) => acc + getCompletionPercentage(s), 0) / students.length)
+    : 0;
+
+  // Total XP across active students
+  const totalStudentsXP = students.reduce((acc, s) => acc + (s.xp || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -59,6 +169,204 @@ export const InstructorPanel: React.FC = () => {
               <Laptop className="w-3.5 h-3.5" />
               Buka Studio Praktik
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Stats Widget: Active Students & Most Popular Coding Studio */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+              <PieChart className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                Ringkasan Analitik Siswa & Studio Coding
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Statistik real-time aktivitas belajar siswa dan popularitas penggunaan 4 studio terintegrasi.
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 w-fit">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            Data Tersinkronisasi
+          </span>
+        </div>
+
+        {/* 4 Metrics Bento Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          {/* Card 1: Total Active Students */}
+          <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-slate-800/60 border border-indigo-100 dark:border-slate-700/80 flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
+                Total Siswa Aktif
+              </span>
+              <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
+                <Users className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-slate-900 dark:text-white">
+                  {students.length}
+                </span>
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  Siswa Terverifikasi
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Dari {totalRegisteredStudents.length} siswa terdaftar ({trialUsers.length} akun uji coba trial)
+              </p>
+            </div>
+          </div>
+
+          {/* Card 2: Most Popular Coding Studio */}
+          <div className={`p-4 rounded-2xl border ${mostPopularStudio.accentBg} flex flex-col justify-between`}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-1.5">
+                <Trophy className="w-4 h-4 text-amber-500" />
+                <span className={`text-xs font-bold uppercase tracking-wider ${mostPopularStudio.accentText}`}>
+                  Studio Terpopuler
+                </span>
+              </div>
+              <button
+                onClick={() => openStudio(mostPopularStudio.id)}
+                title={`Buka ${mostPopularStudio.name}`}
+                className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="mt-3">
+              <div className="flex items-center gap-2">
+                <mostPopularStudio.icon className={`w-5 h-5 ${mostPopularStudio.accentText} shrink-0`} />
+                <span className="text-lg font-black text-slate-900 dark:text-white truncate">
+                  {mostPopularStudio.shortName}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1">
+                <strong>{mostPopularStudio.completedCount} modul</strong> diselesaikan ({totalStudioCompletions > 0 ? Math.round((mostPopularStudio.completedCount / totalStudioCompletions) * 100) : 0}% porsi belajar)
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3: Average Completion Rate */}
+          <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-slate-800/60 border border-emerald-100 dark:border-slate-700/80 flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                Rata-rata Kelulusan
+              </span>
+              <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-slate-900 dark:text-white">
+                  {avgCompletionRate}%
+                </span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  Target: 100%
+                </span>
+              </div>
+              <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mt-2">
+                <div
+                  className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${avgCompletionRate}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                {totalStudioCompletions} total modul diselesaikan siswa
+              </p>
+            </div>
+          </div>
+
+          {/* Card 4: Total Gamified XP Accumulated */}
+          <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-slate-800/60 border border-amber-100 dark:border-slate-700/80 flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                Total Akumulasi XP
+              </span>
+              <div className="p-2 rounded-xl bg-amber-500 text-white shadow-xs">
+                <Zap className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-slate-900 dark:text-white">
+                  {totalStudentsXP.toLocaleString('id-ID')}
+                </span>
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                  XP Siswa
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Rata-rata {students.length > 0 ? Math.round(totalStudentsXP / students.length) : 0} XP per siswa aktif
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Studio Popularity Distribution Bar */}
+        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+              Distribusi Penggunaan 4 Studio Coding
+            </span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {totalStudioCompletions} total pengerjaan modul di studio
+            </span>
+          </div>
+
+          {/* Stacked multi-segment bar */}
+          <div className="w-full h-3 rounded-full overflow-hidden flex bg-slate-200 dark:bg-slate-700 p-0.5">
+            {studioStats.map(st => {
+              const pct = totalStudioCompletions > 0 ? Math.round((st.completedCount / totalStudioCompletions) * 100) : 25;
+              return (
+                <div
+                  key={st.id}
+                  title={`${st.name}: ${st.completedCount} modul (${pct}%)`}
+                  className={`${st.barColor} h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full`}
+                  style={{ width: `${pct}%` }}
+                />
+              );
+            })}
+          </div>
+
+          {/* Studio Legend / Quick Links */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+            {studioStats.map(st => {
+              const Icon = st.icon;
+              const pct = totalStudioCompletions > 0 ? Math.round((st.completedCount / totalStudioCompletions) * 100) : 0;
+              const isTop = st.id === mostPopularStudio.id;
+              return (
+                <button
+                  key={st.id}
+                  onClick={() => openStudio(st.id)}
+                  className={`p-2 rounded-xl border text-left flex items-center justify-between gap-2 transition-all hover:scale-[1.02] ${
+                    isTop
+                      ? 'border-amber-400 dark:border-amber-600 bg-amber-50/50 dark:bg-amber-950/30'
+                      : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <div className={`w-2.5 h-2.5 rounded-full ${st.barColor} shrink-0`} />
+                    <div className="truncate">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate flex items-center gap-1">
+                        <span>{st.shortName}</span>
+                        {isTop && <Trophy className="w-3 h-3 text-amber-500 inline shrink-0" />}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                        {st.completedCount} modul ({pct}%)
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

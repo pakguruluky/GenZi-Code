@@ -30,7 +30,8 @@ import {
   ShieldCheck,
   CheckCircle2,
   Database,
-  Lock
+  Lock,
+  Swords
 } from 'lucide-react';
 
 function MainLayout() {
@@ -221,6 +222,17 @@ function MainLayout() {
               >
                 <Bot className="w-3.5 h-3.5" />
                 PictoBlox AI
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+              <a
+                href="https://codecombat.com/play"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-rose-400 hover:text-rose-300 flex items-center gap-1"
+                title="Buka CodeCombat RPG Dungeon Web Asli"
+              >
+                <Swords className="w-3.5 h-3.5" />
+                CodeCombat RPG
                 <ExternalLink className="w-2.5 h-2.5" />
               </a>
             </div>

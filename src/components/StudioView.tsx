@@ -147,39 +147,50 @@ export const StudioView: React.FC = () => {
       ) : (
         /* Iframe Embed Mode */
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col h-[750px]">
-          <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-between gap-4 border-b border-slate-800">
+          <div className="bg-slate-900 text-white px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-slate-800 text-white">
+              <div className="p-2 rounded-lg bg-slate-800 text-white shrink-0">
                 {getStudioIcon(currentStudio.id)}
               </div>
               <div>
                 <h2 className="text-sm font-bold text-white tracking-wide">
-                  {currentStudio.name} (Embed Mode)
+                  {currentStudio.name} (Web Resmi / Embed Mode)
                 </h2>
                 <p className="text-xs text-slate-400 line-clamp-1">
-                  Jika web membatasi frame (CSP/X-Frame-Options), gunakan tombol &quot;Buka di Tab Baru&quot; di kanan atas.
+                  Membuka web resmi {currentStudio.name} ({currentStudio.officialUrl}). Jika browser membatasi frame (CSP/X-Frame-Options), gunakan tombol &quot;Buka di Tab Baru&quot;.
                 </p>
               </div>
             </div>
 
-            <a
-              href={currentStudio.officialUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>Buka di Tab Baru</span>
-            </a>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setStudioMode('interactive')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all border border-slate-700"
+              >
+                <span>← Mode Interaktif</span>
+              </button>
+              <a
+                href={currentStudio.officialUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Buka di Tab Baru</span>
+              </a>
+            </div>
           </div>
 
           <div className="flex-1 relative bg-slate-100 dark:bg-slate-950 flex flex-col">
             <iframe
+              key={selectedStudioId}
               src={
                 selectedStudioId === 'scratch'
                   ? 'https://scratch.mit.edu/projects/editor/?tutorial=getStarted'
                   : selectedStudioId === 'microbit'
                   ? 'https://makecode.microbit.org/#editor'
+                  : selectedStudioId === 'codecombat'
+                  ? 'https://codecombat.com/play'
                   : 'https://pictoblox.ai/'
               }
               className="w-full flex-1 border-0"
