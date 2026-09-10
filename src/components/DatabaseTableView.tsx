@@ -628,9 +628,9 @@ export const DatabaseTableView: React.FC = () => {
                           {u.status === 'pending' ? (
                             <>
                               <button
-                                onClick={() => {
-                                  approveStudent(u.id);
-                                  showNotification(`Akun ${u.name} telah disetujui.`);
+                                onClick={async () => {
+                                  const res = await approveStudent(u.id);
+                                  showNotification(res.message || `Akun ${u.name} telah disetujui.`);
                                 }}
                                 title="Setujui Siswa"
                                 className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-xs transition-colors"
@@ -638,8 +638,8 @@ export const DatabaseTableView: React.FC = () => {
                                 Approve
                               </button>
                               <button
-                                onClick={() => {
-                                  rejectStudent(u.id);
+                                onClick={async () => {
+                                  await rejectStudent(u.id);
                                   showNotification(`Pendaftaran ${u.name} ditolak.`);
                                 }}
                                 title="Tolak Siswa"

@@ -380,21 +380,21 @@ export const AdminPanel: React.FC = () => {
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => {
-                              approveStudent(student.id);
-                              showFeedback(`Siswa ${student.name} berhasil disetujui (Approved) dengan paket ${formatDurationLabel(student.duration || '3_bulan')}!`);
+                            onClick={async () => {
+                              const res = await approveStudent(student.id);
+                              showFeedback(res.message || `Siswa ${student.name} berhasil disetujui (Approved) dengan paket ${formatDurationLabel(student.duration || '3_bulan')}!`);
                             }}
-                            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs flex items-center gap-1"
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs flex items-center gap-1 transition-colors"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             Approve (Aktifkan)
                           </button>
                           <button
-                            onClick={() => {
-                              rejectStudent(student.id);
+                            onClick={async () => {
+                              await rejectStudent(student.id);
                               showFeedback(`Pendaftaran ${student.name} ditolak.`, 'error');
                             }}
-                            className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200"
+                            className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors"
                           >
                             <UserX className="w-3.5 h-3.5" />
                             Tolak

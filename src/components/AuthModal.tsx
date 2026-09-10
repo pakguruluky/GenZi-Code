@@ -86,28 +86,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!registerForm.name || !registerForm.email) {
       setMessage({ type: 'error', text: 'Nama dan email wajib diisi.' });
       return;
     }
-    const res = registerSelfStudent(registerForm);
-    if (res.success) {
-      setMessage({ type: 'success', text: res.message || 'Pendaftaran berhasil.' });
-      setRegisterForm({ name: '', email: '', school: '', phone: '', duration: '3_bulan' });
-    } else {
-      setMessage({ type: 'error', text: res.message || 'Pendaftaran gagal.' });
+    setIsSubmitting(true);
+    try {
+      const res = await registerSelfStudent(registerForm);
+      if (res.success) {
+        setMessage({ type: 'success', text: res.message || 'Pendaftaran berhasil.' });
+        setRegisterForm({ name: '', email: '', school: '', phone: '', duration: '3_bulan' });
+      } else {
+        setMessage({ type: 'error', text: res.message || 'Pendaftaran gagal.' });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleTrial = (e: React.FormEvent) => {
+  const handleTrial = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = startTrialSession(trialName || 'Siswa Trial', trialEmail);
-    if (res.success) {
-      onClose();
-    } else {
-      setMessage({ type: 'error', text: res.message || 'Gagal memulai trial.' });
+    setIsSubmitting(true);
+    try {
+      const res = await startTrialSession(trialName || 'Siswa Trial', trialEmail);
+      if (res.success) {
+        onClose();
+      } else {
+        setMessage({ type: 'error', text: res.message || 'Gagal memulai trial.' });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

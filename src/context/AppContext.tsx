@@ -73,9 +73,9 @@ interface AppContextType {
     school?: string;
     phone?: string;
     duration?: SubscriptionDuration;
-  }) => { success: boolean; message?: string };
-  startTrialSession: (name: string, email?: string) => { success: boolean; message?: string };
-  approveStudent: (userId: string, duration?: SubscriptionDuration) => Promise<void>;
+  }) => Promise<{ success: boolean; message?: string }>;
+  startTrialSession: (name: string, email?: string) => Promise<{ success: boolean; message?: string }>;
+  approveStudent: (userId: string, duration?: SubscriptionDuration) => Promise<{ success: boolean; message?: string }>;
   rejectStudent: (userId: string) => Promise<void>;
   updateUserDuration: (userId: string, duration: SubscriptionDuration) => Promise<void>;
   registerStudentDirectly: (data: {
@@ -224,8 +224,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Saring akun demo tiruan agar database murni data asli backend
         const realRemoteUsers = remoteUsers.filter(u => !DEMO_USER_IDS.has(u.id));
         if (realRemoteUsers.length > 0) {
-          setUsers(realRemoteUsers);
-          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(realRemoteUsers));
+          setUsers(prevUsers => {
+            // Gabungkan remote users dengan user lokal yang baru saja didaftarkan agar tidak tertimpa sebelum tersinkron
+            const remoteMap = new Map<string, UserAccount>();
+            for (const ru of realRemoteUsers) {
+              remoteMap.set(ru.id, ru);
+            }
+            const merged = [...realRemoteUsers];
+            for (const local of prevUsers) {
+              if (!DEMO_USER_IDS.has(local.id) && !remoteMap.has(local.id)) {
+                merged.unshift(local);
+                // Trigger latar belakang untuk memastikan data tersimpan
+                syncUserToFirestore(local);
+              }
+            }
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(merged));
+            return merged;
+          });
 
           // Perbarui status currentUser jika ada update dari backend (misal disetujui / poin bertambah)
           setCurrentUser(prevUser => {
@@ -351,13 +366,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  const registerSelfStudent = (data: {
+  const registerSelfStudent = async (data: {
     name: string;
     email: string;
     school?: string;
     phone?: string;
     duration?: SubscriptionDuration;
-  }) => {
+  }): Promise<{ success: boolean; message: string }> => {
     const cleanEmail = data.email.trim().toLowerCase();
     const existing = users.find(u => u.email.toLowerCase() === cleanEmail);
     if (existing) {
@@ -382,15 +397,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setUsers(prev => [newStudent, ...prev]);
-    syncUserToFirestore(newStudent);
+    const res = await syncUserToFirestore(newStudent);
+    if (!res.success) {
+      console.warn('[Firestore] Sync notice saat pendaftaran:', res.error);
+    }
 
     return {
       success: true,
-      message: 'Pendaftaran berhasil! Akun Anda berstatus PENDING dan baru akan aktif setelah diapprove serta didaftarkan oleh Admin.'
+      message: 'Pendaftaran berhasil! Data Anda tersimpan di database realtime dan baru akan aktif setelah diapprove serta didaftarkan oleh Admin.'
     };
   };
 
-  const startTrialSession = (name: string, email?: string) => {
+  const startTrialSession = async (name: string, email?: string): Promise<{ success: boolean; message: string }> => {
     const trialEmail = email?.trim().toLowerCase() || `trial_${Date.now()}@guest.genzi.id`;
     const newTrialUser: UserAccount = {
       id: `user-trial-${Date.now()}`,
@@ -407,7 +425,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setUsers(prev => [newTrialUser, ...prev]);
     setCurrentUser(newTrialUser);
-    syncUserToFirestore(newTrialUser);
+    await syncUserToFirestore(newTrialUser);
 
     return {
       success: true,
@@ -415,29 +433,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
-  const approveStudent = async (userId: string, duration?: SubscriptionDuration) => {
+  const approveStudent = async (userId: string, duration?: SubscriptionDuration): Promise<{ success: boolean; message?: string }> => {
     const target = users.find(u => u.id === userId);
-    if (!target) return;
+    if (!target) return { success: false, message: 'Data siswa tidak ditemukan.' };
 
     const nowIso = new Date().toISOString();
     const finalDuration = duration || target.duration || '3_bulan';
-    const expiresAt = calculateExpirationDate(nowIso, finalDuration);
+    const calculatedExpiry = calculateExpirationDate(nowIso, finalDuration);
 
     const updated: UserAccount = {
       ...target,
       status: 'active',
       duration: finalDuration,
       activatedAt: nowIso,
-      expiresAt,
       approvedAt: nowIso,
       approvedBy: currentUser?.name || 'Admin GenZi'
     };
+
+    if (calculatedExpiry) {
+      updated.expiresAt = calculatedExpiry;
+    } else {
+      delete updated.expiresAt;
+    }
 
     setUsers(prev => prev.map(u => (u.id === userId ? updated : u)));
     if (currentUser?.id === userId) {
       setCurrentUser(updated);
     }
-    await syncUserToFirestore(updated);
+    const saveResult = await syncUserToFirestore(updated);
+    if (!saveResult.success) {
+      console.warn('[Firestore] Gagal menyimpan persetujuan:', saveResult.error);
+    }
+
+    return {
+      success: true,
+      message: `Siswa "${updated.name}" berhasil diapprove dan langsung aktif di database realtime!`
+    };
   };
 
   const updateUserDuration = async (userId: string, duration: SubscriptionDuration) => {
@@ -445,14 +476,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!target) return;
 
     const baseActivation = target.activatedAt || target.approvedAt || new Date().toISOString();
-    const expiresAt = calculateExpirationDate(baseActivation, duration);
+    const calculatedExpiry = calculateExpirationDate(baseActivation, duration);
 
     const updated: UserAccount = {
       ...target,
       duration,
-      activatedAt: baseActivation,
-      expiresAt
+      activatedAt: baseActivation
     };
+
+    if (calculatedExpiry) {
+      updated.expiresAt = calculatedExpiry;
+    } else {
+      delete updated.expiresAt;
+    }
 
     setUsers(prev => prev.map(u => (u.id === userId ? updated : u)));
     if (currentUser?.id === userId) {
@@ -462,10 +498,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const rejectStudent = async (userId: string) => {
+    const target = users.find(u => u.id === userId);
+    if (!target) return;
+    const updated: UserAccount = {
+      ...target,
+      status: 'rejected',
+      approvedBy: currentUser?.name || 'Admin GenZi'
+    };
     setUsers(prev =>
-      prev.map(u => (u.id === userId ? { ...u, status: 'rejected' } : u))
+      prev.map(u => (u.id === userId ? updated : u))
     );
-    await updateUserStatusFirestore(userId, 'rejected', currentUser?.name || 'Admin GenZi');
+    await syncUserToFirestore(updated);
   };
 
   const registerStudentDirectly = async (data: {

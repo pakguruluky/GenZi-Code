@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
+  initializeFirestore,
   getFirestore,
   collection,
   doc,
@@ -24,17 +25,28 @@ export const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseAppletConfig.appId,
 };
 
-// Initialize Cloud Database
+// Initialize Cloud Database with Long Polling and undefined property tolerance
 let app: any = null;
 let db: Firestore | null = null;
 let auth: any = null;
 
 try {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+  try {
+    db = initializeFirestore(
+      app,
+      {
+        ignoreUndefinedProperties: true,
+        experimentalForceLongPolling: true,
+      },
+      firebaseConfig.firestoreDatabaseId
+    );
+  } catch {
+    db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+  }
   auth = getAuth(app);
 } catch (initErr) {
-  console.warn('Database initialization note (using local cache mode):', initErr);
+  console.warn('Database initialization note:', initErr);
 }
 
 export const getDb = (): Firestore | null => db;
@@ -42,6 +54,25 @@ export { app, db, auth };
 
 const USERS_COLLECTION = 'genzi_users';
 const PROJECTS_COLLECTION = 'genzi_projects';
+
+/**
+ * Clean any undefined properties from object to ensure Firestore never throws
+ */
+export function sanitizeForFirestore<T extends Record<string, any>>(obj: T): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      if (Array.isArray(value)) {
+        result[key] = value.filter(item => item !== undefined);
+      } else if (value !== null && typeof value === 'object' && !(value instanceof Date)) {
+        result[key] = sanitizeForFirestore(value);
+      } else {
+        result[key] = value;
+      }
+    }
+  }
+  return result;
+}
 
 export interface StudioProjectDoc {
   id: string;
@@ -57,10 +88,11 @@ export async function saveProjectToFirestore(project: StudioProjectDoc): Promise
   if (!db) return false;
   try {
     const projectRef = doc(db, PROJECTS_COLLECTION, project.id);
-    await setDoc(projectRef, {
+    const cleaned = sanitizeForFirestore({
       ...project,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    });
+    await setDoc(projectRef, cleaned, { merge: true });
     return true;
   } catch (error) {
     console.warn('Database saveProject notice (fallback to local cache):', error);
@@ -84,16 +116,23 @@ export async function fetchProjectsFromFirestore(studioType?: 'scratch' | 'picto
   }
 }
 
-export async function syncUserToFirestore(user: UserAccount): Promise<void> {
-  if (!db) return;
+export async function syncUserToFirestore(user: UserAccount): Promise<{ success: boolean; error?: string }> {
+  if (!db) {
+    console.warn('Database sync warning: Firestore db is not initialized');
+    return { success: false, error: 'Database belum terinisialisasi' };
+  }
   try {
     const userRef = doc(db, USERS_COLLECTION, user.id);
-    await setDoc(userRef, {
+    const cleanedData = sanitizeForFirestore({
       ...user,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
-  } catch (error) {
-    console.warn('Database sync notice (saved locally):', error);
+    });
+    await setDoc(userRef, cleanedData, { merge: true });
+    console.log('[Firestore] User berhasil tersimpan:', user.name, user.id, `Status: ${user.status}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Firestore] Gagal menyimpan user ke database:', error);
+    return { success: false, error: error?.message || 'Gagal menyimpan ke database' };
   }
 }
 
@@ -109,28 +148,53 @@ export async function fetchAllUsersFromFirestore(): Promise<UserAccount[] | null
   }
 }
 
-export async function updateUserStatusFirestore(userId: string, status: 'active' | 'pending' | 'rejected', approvedBy?: string): Promise<void> {
-  if (!db) return;
+export async function updateUserStatusFirestore(
+  userId: string,
+  status: 'active' | 'pending' | 'rejected',
+  details?: {
+    approvedBy?: string;
+    duration?: string;
+    activatedAt?: string;
+    expiresAt?: string;
+  }
+): Promise<boolean> {
+  if (!db) return false;
   try {
     const userRef = doc(db, USERS_COLLECTION, userId);
-    await updateDoc(userRef, {
+    const updatePayload: Record<string, any> = {
       status,
-      approvedBy: approvedBy || 'Admin',
-      approvedAt: status === 'active' ? new Date().toISOString() : null,
       updatedAt: new Date().toISOString()
-    });
+    };
+    if (status === 'active') {
+      updatePayload.approvedBy = details?.approvedBy || 'Admin GenZi';
+      updatePayload.approvedAt = new Date().toISOString();
+      if (details?.activatedAt) updatePayload.activatedAt = details.activatedAt;
+      if (details?.duration) updatePayload.duration = details.duration;
+      if (details?.expiresAt !== undefined) updatePayload.expiresAt = details.expiresAt;
+    } else if (status === 'rejected') {
+      updatePayload.approvedBy = details?.approvedBy || 'Admin GenZi';
+    }
+
+    const cleaned = sanitizeForFirestore(updatePayload);
+    await updateDoc(userRef, cleaned);
+    console.log(`[Firestore] Status user ${userId} diperbarui ke ${status}`);
+    return true;
   } catch (error) {
-    console.warn('Database status update notice:', error);
+    console.error('Database status update error:', error);
+    return false;
   }
 }
 
-export async function deleteUserFromFirestore(userId: string): Promise<void> {
-  if (!db) return;
+export async function deleteUserFromFirestore(userId: string): Promise<boolean> {
+  if (!db) return false;
   try {
     const userRef = doc(db, USERS_COLLECTION, userId);
     await deleteDoc(userRef);
+    console.log(`[Firestore] User ${userId} berhasil dihapus dari database`);
+    return true;
   } catch (error) {
-    console.warn('Database delete notice:', error);
+    console.error('Database delete error:', error);
+    return false;
   }
 }
 
