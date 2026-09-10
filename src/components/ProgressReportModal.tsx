@@ -251,14 +251,14 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
     }
     .sign-row {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       margin-top: 40px;
       padding-top: 20px;
       border-top: 1px solid #e2e8f0;
     }
     .sign-box {
       text-align: center;
-      width: 200px;
+      width: 220px;
     }
     .sign-line {
       margin-top: 50px;
@@ -371,14 +371,7 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
 
     <div class="sign-row">
       <div class="sign-box">
-        <div>Mengetahui,</div>
-        <div class="sign-line">
-          Dimas Ardiansyah, S.Kom.<br>
-          <span style="font-size:10px; font-weight:normal; color:#64748b;">Instruktur Pembimbing</span>
-        </div>
-      </div>
-      <div class="sign-box">
-        <div>Tanggal Rapor: ${reportDate}</div>
+        <div>Pusat Akademik, ${reportDate}</div>
         <div class="sign-line">
           Pak Guru Luky<br>
           <span style="font-size:10px; font-weight:normal; color:#64748b;">Kepala Instruktur & Founder</span>
@@ -665,18 +658,11 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
             </div>
 
             {/* Signatures */}
-            <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 flex items-end justify-between text-xs text-slate-600 dark:text-slate-400">
-              <div className="text-center">
-                <p className="text-[11px]">Instruktur Pendamping,</p>
-                <div className="h-10"></div>
-                <p className="font-bold text-slate-900 dark:text-white">Dimas Ardiansyah, S.Kom.</p>
-                <p className="text-[10px] text-slate-500">Divisi Kurikulum Coding</p>
-              </div>
-
-              <div className="text-center">
+            <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 flex items-end justify-end text-xs text-slate-600 dark:text-slate-400">
+              <div className="text-center min-w-[200px]">
                 <p className="text-[11px]">Pusat Akademik, {reportDate}</p>
                 <div className="h-10"></div>
-                <p className="font-bold text-slate-900 dark:text-white">Pak Guru Luky</p>
+                <p className="font-bold text-slate-900 dark:text-white border-t border-slate-300 dark:border-slate-700 pt-1">Pak Guru Luky</p>
                 <p className="text-[10px] text-slate-500">Kepala Instruktur & Founder</p>
               </div>
             </div>
