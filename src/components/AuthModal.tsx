@@ -59,6 +59,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [trialEmail, setTrialEmail] = useState('');
 
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Sync tab with defaultTab whenever modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setTab(defaultTab);
+      setMessage(null);
+    }
+  }, [defaultTab, isOpen]);
 
   if (!isOpen) return null;
 
@@ -85,8 +94,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setMessage({ type: 'error', text: res.message || 'Login gagal.' });
     }
   };
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -330,10 +337,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5"
+                disabled={isSubmitting}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold rounded-xl text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5"
               >
                 <UserPlus className="w-4 h-4" />
-                Daftar (Kirim ke Admin untuk Approval)
+                {isSubmitting ? 'Menyimpan Pendaftaran...' : 'Daftar (Kirim ke Admin untuk Approval)'}
               </button>
             </form>
           )}
@@ -372,10 +380,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5"
+                disabled={isSubmitting}
+                className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white font-bold rounded-xl text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5"
               >
                 <Sparkles className="w-4 h-4" />
-                Mulai Akses Trial Sekarang (1x)
+                {isSubmitting ? 'Menyiapkan Sesi...' : 'Mulai Akses Trial Sekarang (1x)'}
               </button>
             </form>
           )}
