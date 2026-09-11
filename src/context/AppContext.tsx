@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { UserAccount, UserRole, Material, SubscriptionDuration, ToastNotification } from '../types';
+import { UserAccount, UserRole, Material, SubscriptionDuration, ToastNotification, OnlineClassSchedule } from '../types';
 import { ALL_MATERIALS } from '../data/curriculumData';
 import {
   calculateExpirationDate,
@@ -11,12 +11,17 @@ import {
   fetchAllUsersFromFirestore,
   updateUserStatusFirestore,
   deleteUserFromFirestore,
-  subscribeToUsers
+  subscribeToUsers,
+  saveOnlineClassToFirestore,
+  deleteOnlineClassFromFirestore,
+  fetchAllOnlineClassesFromFirestore,
+  subscribeToOnlineClasses
 } from '../lib/firebase';
 import confetti from 'canvas-confetti';
 
 const STORAGE_KEY_CURRENT_USER = 'genzicode_current_user';
 const STORAGE_KEY_USERS = 'genzicode_users_db';
+const STORAGE_KEY_CLASSES = 'genzicode_online_classes';
 
 export const DEFAULT_ADMIN_PASSWORD = 'bajuri39';
 
@@ -112,6 +117,13 @@ interface AppContextType {
   toast: ToastNotification | null;
   showToast: (toast: Omit<ToastNotification, 'id'>) => void;
   hideToast: () => void;
+  // Online Class Schedule (Zoom / GMeet)
+  onlineClasses: OnlineClassSchedule[];
+  createOnlineClass: (data: Omit<OnlineClassSchedule, 'id' | 'createdAt'>) => Promise<{ success: boolean; message?: string }>;
+  updateOnlineClass: (id: string, data: Partial<OnlineClassSchedule>) => Promise<{ success: boolean; message?: string }>;
+  deleteOnlineClass: (id: string) => Promise<{ success: boolean; message?: string }>;
+  // Interactive Module Quizzes
+  submitModuleQuiz: (materialId: string, score: number, totalQuestions: number) => Promise<{ passed: boolean; xpEarned: number }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -201,6 +213,75 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [activeStudio, setActiveStudio] = useState<'scratch' | 'microbit' | 'pictoblox' | 'codecombat' | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+
+  // Online Classes Schedule State (Realtime dari Backend Firestore)
+  const [onlineClasses, setOnlineClasses] = useState<OnlineClassSchedule[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_CLASSES);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Failed to parse cached online classes', e);
+      }
+    }
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    tomorrow.setHours(19, 30, 0, 0);
+    const in3Days = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+    in3Days.setHours(16, 0, 0, 0);
+
+    return [
+      {
+        id: 'cls-sample-01',
+        title: 'Bimbingan Live: Membuat Game Maze Interaktif di Scratch 3.0',
+        description: 'Sesi tatap muka online bimbingan logika Scratch, membuat rintangan bergerak, dan kalkulasi skor koin.',
+        platform: 'zoom',
+        meetingUrl: 'https://zoom.us/j/81234567890?pwd=GENZICODINGPASS',
+        meetingId: '812 3456 7890',
+        passcode: 'genzi2026',
+        instructorName: 'Bapak Guru Hilman (Admin & Kepala Instruktur)',
+        dateTime: tomorrow.toISOString().slice(0, 16),
+        durationMinutes: 60,
+        targetAudience: 'Semua Siswa & Pemula Scratch',
+        status: 'scheduled',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'cls-sample-02',
+        title: 'Bedah AI & Vision: Pengenalan Wajah & Pose di PictoBlox',
+        description: 'Praktik langsung melatih model Machine Learning menggunakan kamera webcam untuk deteksi ekspresi wajah dan kendali gerak.',
+        platform: 'gmeet',
+        meetingUrl: 'https://meet.google.com/gen-zico-ding',
+        meetingId: 'gen-zico-ding',
+        passcode: 'Langsung Masuk (Tanpa Sandi)',
+        instructorName: 'Bapak Dimas Ardiansyah, S.Kom.',
+        dateTime: in3Days.toISOString().slice(0, 16),
+        durationMinutes: 75,
+        targetAudience: 'Siswa Tingkat Menengah & Modul AI',
+        status: 'scheduled',
+        createdAt: new Date().toISOString()
+      }
+    ];
+  });
+
+  // Realtime subscriber untuk Kelas Online langsung dari Cloud Firestore Backend
+  useEffect(() => {
+    const unsub = subscribeToOnlineClasses((remoteClasses) => {
+      if (remoteClasses && remoteClasses.length > 0) {
+        setOnlineClasses(remoteClasses);
+        localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(remoteClasses));
+      }
+    });
+
+    fetchAllOnlineClassesFromFirestore().then((initial) => {
+      if (initial && initial.length > 0) {
+        setOnlineClasses(initial);
+        localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(initial));
+      }
+    }).catch(err => console.warn('Fetch online classes warning:', err));
+
+    return () => unsub();
+  }, []);
 
   // Sync realtime langsung dari Cloud Firestore Backend (Bukan Data Demo)
   useEffect(() => {
@@ -914,6 +995,128 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const exportToGoogleSheetsCSV = exportTableToCSV;
 
+  // Manajemen Kelas Online (Zoom & Google Meet)
+  const createOnlineClass = async (data: Omit<OnlineClassSchedule, 'id' | 'createdAt'>): Promise<{ success: boolean; message?: string }> => {
+    const newClass: OnlineClassSchedule = {
+      ...data,
+      id: 'cls-' + Date.now(),
+      createdAt: new Date().toISOString()
+    };
+    setOnlineClasses(prev => [newClass, ...prev]);
+    localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify([newClass, ...onlineClasses]));
+    const res = await saveOnlineClassToFirestore(newClass);
+    if (res.success) {
+      showToast({
+        type: 'success',
+        title: 'Jadwal Kelas Tersimpan!',
+        message: `Sesi "${newClass.title}" berhasil dijadwalkan dan disimpan ke backend Firestore realtime.`
+      });
+      return { success: true };
+    } else {
+      return { success: false, message: res.error };
+    }
+  };
+
+  const updateOnlineClass = async (id: string, data: Partial<OnlineClassSchedule>): Promise<{ success: boolean; message?: string }> => {
+    const target = onlineClasses.find(c => c.id === id);
+    if (!target) return { success: false, message: 'Kelas tidak ditemukan' };
+    const updated: OnlineClassSchedule = {
+      ...target,
+      ...data,
+      updatedAt: new Date().toISOString()
+    };
+    setOnlineClasses(prev => prev.map(c => (c.id === id ? updated : c)));
+    localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(onlineClasses.map(c => (c.id === id ? updated : c))));
+    const res = await saveOnlineClassToFirestore(updated);
+    if (res.success) {
+      showToast({
+        type: 'success',
+        title: 'Kelas Berhasil Diperbarui',
+        message: 'Perubahan tautan / info kelas online telah disinkronkan ke database.'
+      });
+      return { success: true };
+    }
+    return { success: false, message: res.error };
+  };
+
+  const deleteOnlineClass = async (id: string): Promise<{ success: boolean; message?: string }> => {
+    const filtered = onlineClasses.filter(c => c.id !== id);
+    setOnlineClasses(filtered);
+    localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(filtered));
+    const ok = await deleteOnlineClassFromFirestore(id);
+    if (ok) {
+      showToast({
+        type: 'info',
+        title: 'Jadwal Kelas Dihapus',
+        message: 'Jadwal kelas online berhasil dihapus dari backend.'
+      });
+      return { success: true };
+    }
+    return { success: false, message: 'Gagal menghapus dari database' };
+  };
+
+  // Kuis Interaktif Akhir Modul
+  const submitModuleQuiz = async (
+    materialId: string,
+    score: number,
+    totalQuestions: number
+  ): Promise<{ passed: boolean; xpEarned: number }> => {
+    if (!currentUser) return { passed: false, xpEarned: 0 };
+
+    const isPassed = score >= 66;
+    const nowIso = new Date().toISOString();
+    const currentCompletedQuizzes = currentUser.completedQuizzes || {};
+    const alreadyPassedBefore = (currentCompletedQuizzes[materialId]?.score ?? 0) >= 66;
+
+    const earnedXp = isPassed && !alreadyPassedBefore ? 50 : 0;
+    const newXp = (currentUser.xp || 0) + earnedXp;
+
+    const currentCompletedMaterials = currentUser.completedMaterialIds || [];
+    const updatedCompletedIds =
+      isPassed && !currentCompletedMaterials.includes(materialId)
+        ? [...currentCompletedMaterials, materialId]
+        : currentCompletedMaterials;
+
+    const updatedQuizzes = {
+      ...currentCompletedQuizzes,
+      [materialId]: {
+        score,
+        passedAt: nowIso
+      }
+    };
+
+    const allScores = Object.values(updatedQuizzes).map(q => q.score);
+    const avgScore =
+      allScores.length > 0
+        ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
+        : score;
+
+    const updatedUser: UserAccount = {
+      ...currentUser,
+      xp: newXp,
+      quizScore: avgScore,
+      quizCount: Object.keys(updatedQuizzes).length,
+      completedQuizzes: updatedQuizzes,
+      completedMaterialIds: updatedCompletedIds
+    };
+
+    setCurrentUser(updatedUser);
+    setUsers(prev => prev.map(u => (u.id === currentUser.id ? updatedUser : u)));
+    await syncUserToFirestore(updatedUser);
+
+    if (isPassed) {
+      showToast({
+        type: 'xp',
+        title: '🧠 Kuis Lulus!',
+        message: `Nilai kuis kamu ${score}%. ${earnedXp > 0 ? `+${earnedXp} XP berhasil didapatkan!` : ''} Modul pembelajaran berikutnya kini telah terbuka!`,
+        xpGained: earnedXp,
+        duration: 5000
+      });
+    }
+
+    return { passed: isPassed, xpEarned: earnedXp };
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -954,7 +1157,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         refreshDatabase,
         toast,
         showToast,
-        hideToast
+        hideToast,
+        onlineClasses,
+        createOnlineClass,
+        updateOnlineClass,
+        deleteOnlineClass,
+        submitModuleQuiz
       }}
     >
       {children}

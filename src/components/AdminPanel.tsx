@@ -9,6 +9,7 @@ import {
 } from '../utils/subscription';
 import { ALL_MATERIALS } from '../data/curriculumData';
 import { DatabaseTableView } from './DatabaseTableView';
+import { OnlineClassView } from './OnlineClassView';
 import {
   ShieldAlert,
   UserCheck,
@@ -29,7 +30,8 @@ import {
   Plus,
   Award,
   AlertTriangle,
-  Calendar
+  Calendar,
+  Video
 } from 'lucide-react';
 
 export const AdminPanel: React.FC = () => {
@@ -51,7 +53,7 @@ export const AdminPanel: React.FC = () => {
     setViewingReportUser
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'approvals' | 'register_student' | 'active_students' | 'instructors' | 'sheets_db'>('approvals');
+  const [activeTab, setActiveTab] = useState<'approvals' | 'register_student' | 'active_students' | 'instructors' | 'sheets_db' | 'online_classes'>('approvals');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [isClearingDemo, setIsClearingDemo] = useState(false);
@@ -299,6 +301,18 @@ export const AdminPanel: React.FC = () => {
           >
             <Table className="w-4 h-4 text-indigo-400" />
             <span>Tabel Database Pengguna</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('online_classes')}
+            className={`px-4 py-2 text-xs sm:text-sm font-bold rounded-t-xl transition-colors flex items-center gap-2 ${
+              activeTab === 'online_classes'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Video className="w-4 h-4 text-blue-500" />
+            <span>Jadwal Kelas Online (Zoom/GMeet)</span>
           </button>
         </div>
       </div>
@@ -799,6 +813,11 @@ export const AdminPanel: React.FC = () => {
       {/* TAB 4: IN-APP DATABASE TABLE VIEW */}
       {activeTab === 'sheets_db' && (
         <DatabaseTableView />
+      )}
+
+      {/* TAB 5: ONLINE CLASS SCHEDULE MANAGEMENT */}
+      {activeTab === 'online_classes' && (
+        <OnlineClassView />
       )}
     </div>
   );

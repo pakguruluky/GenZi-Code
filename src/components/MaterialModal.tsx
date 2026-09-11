@@ -6,6 +6,7 @@ import {
   useNetworkStatus,
   isOfflineMaterialCached
 } from '../utils/offlineStorage';
+import { ModuleQuizCard } from './ModuleQuizCard';
 import {
   X,
   FileText,
@@ -298,6 +299,16 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Kuis Interaktif Sederhana di Akhir Modul */}
+              <div className="mt-6">
+                <ModuleQuizCard
+                  material={material}
+                  onQuizPassed={() => {
+                    // Refresh completion or trigger next module
+                  }}
+                />
               </div>
             </>
           )}

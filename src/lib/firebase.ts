@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import firebaseAppletConfig from '../../firebase-applet-config.json';
-import { UserAccount } from '../types';
+import { UserAccount, OnlineClassSchedule } from '../types';
 
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseAppletConfig.apiKey,
@@ -218,6 +218,78 @@ export function subscribeToUsers(onUpdate: (users: UserAccount[]) => void): () =
     return unsub;
   } catch (err) {
     console.warn('Failed to subscribe to database updates:', err);
+    return () => {};
+  }
+}
+
+const ONLINE_CLASSES_COLLECTION = 'genzi_online_classes';
+
+export async function saveOnlineClassToFirestore(cls: OnlineClassSchedule): Promise<{ success: boolean; error?: string }> {
+  if (!db) {
+    return { success: false, error: 'Database belum terinisialisasi' };
+  }
+  try {
+    const classRef = doc(db, ONLINE_CLASSES_COLLECTION, cls.id);
+    const cleaned = sanitizeForFirestore({
+      ...cls,
+      updatedAt: new Date().toISOString()
+    });
+    await setDoc(classRef, cleaned, { merge: true });
+    console.log('[Firestore] Jadwal kelas online tersimpan:', cls.title, cls.id);
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Firestore] Gagal menyimpan kelas online:', error);
+    return { success: false, error: error?.message || 'Gagal menyimpan kelas online' };
+  }
+}
+
+export async function deleteOnlineClassFromFirestore(classId: string): Promise<boolean> {
+  if (!db) return false;
+  try {
+    const classRef = doc(db, ONLINE_CLASSES_COLLECTION, classId);
+    await deleteDoc(classRef);
+    console.log('[Firestore] Kelas online dihapus:', classId);
+    return true;
+  } catch (error) {
+    console.error('[Firestore] Gagal menghapus kelas online:', error);
+    return false;
+  }
+}
+
+export async function fetchAllOnlineClassesFromFirestore(): Promise<OnlineClassSchedule[] | null> {
+  if (!db) return null;
+  try {
+    const snapshot = await getDocs(collection(db, ONLINE_CLASSES_COLLECTION));
+    if (snapshot.empty) return [];
+    return snapshot.docs.map(d => d.data() as OnlineClassSchedule);
+  } catch (error) {
+    console.warn('[Firestore] Error fetch online classes:', error);
+    return null;
+  }
+}
+
+export function subscribeToOnlineClasses(onUpdate: (classes: OnlineClassSchedule[]) => void): () => void {
+  if (!db) return () => {};
+  try {
+    const unsub = onSnapshot(
+      collection(db, ONLINE_CLASSES_COLLECTION),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => doc.data() as OnlineClassSchedule);
+          // Sort by dateTime ascending
+          list.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+          onUpdate(list);
+        } else {
+          onUpdate([]);
+        }
+      },
+      (error) => {
+        console.warn('Realtime online classes listener notice:', error);
+      }
+    );
+    return unsub;
+  } catch (err) {
+    console.warn('Failed to subscribe to online classes:', err);
     return () => {};
   }
 }

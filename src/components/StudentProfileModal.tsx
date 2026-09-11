@@ -238,6 +238,101 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ isOpen
 
         {/* Modal Scrollable Body */}
         <div className="p-6 overflow-y-auto space-y-6 text-slate-900 dark:text-white">
+          {/* Dedicated Curriculum Completion Progress Bar Card */}
+          <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-50/90 via-slate-50 to-emerald-50/70 dark:from-slate-800/90 dark:via-slate-900 dark:to-indigo-950/50 border border-indigo-200/80 dark:border-slate-700 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-xs">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">
+                    Indikator Capaian Kurikulum
+                  </span>
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                    {completedCount} dari {ALL_MATERIALS.length} Modul Selesai ({completionPercentage}%)
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className={`px-2.5 py-1 rounded-full text-xs font-black border ${
+                  completionPercentage === 100
+                    ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/70 dark:text-amber-300'
+                    : completionPercentage >= 50
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300'
+                    : 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/70 dark:text-indigo-300'
+                }`}>
+                  {completionPercentage === 100
+                    ? '🏆 Lulus 100% (Cum Laude)'
+                    : completionPercentage >= 50
+                    ? '⚡ Tingkat Menengah'
+                    : '🌱 Tahap Dasar'}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                  Sisa {Math.max(0, ALL_MATERIALS.length - completedCount)} modul
+                </span>
+              </div>
+            </div>
+
+            {/* Main Animated Progress Bar Track */}
+            <div className="relative w-full h-4 bg-slate-200/90 dark:bg-slate-700/80 rounded-full overflow-hidden p-0.5 shadow-inner">
+              <div
+                className="h-full bg-gradient-to-r from-indigo-600 via-blue-500 to-emerald-500 rounded-full transition-all duration-700 relative overflow-hidden flex items-center justify-end"
+                style={{ width: `${Math.max(completionPercentage, completedCount > 0 ? 4 : 0)}%` }}
+              >
+                {/* Shimmer effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
+              </div>
+            </div>
+
+            {/* Sub-Category Mini Progress Breakdown */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4 pt-3.5 border-t border-slate-200/80 dark:border-slate-700/80 text-xs">
+              {[
+                {
+                  label: 'Scratch 3.0',
+                  done: ALL_MATERIALS.filter(m => m.category === 'Scratch' && currentUser.completedMaterialIds?.includes(m.id)).length,
+                  total: ALL_MATERIALS.filter(m => m.category === 'Scratch').length,
+                  barColor: 'bg-amber-500'
+                },
+                {
+                  label: 'BBC Micro:bit',
+                  done: ALL_MATERIALS.filter(m => m.category === 'Microbit' && currentUser.completedMaterialIds?.includes(m.id)).length,
+                  total: ALL_MATERIALS.filter(m => m.category === 'Microbit').length,
+                  barColor: 'bg-emerald-500'
+                },
+                {
+                  label: 'PictoBlox AI',
+                  done: ALL_MATERIALS.filter(m => m.category === 'Pictoblox' && currentUser.completedMaterialIds?.includes(m.id)).length,
+                  total: ALL_MATERIALS.filter(m => m.category === 'Pictoblox').length,
+                  barColor: 'bg-blue-500'
+                },
+                {
+                  label: 'Arcade / Logika',
+                  done: ALL_MATERIALS.filter(m => (m.category === 'MakeCode Arcade' || m.category === 'Game Logika (SpriteLab)' || m.category === 'CodeCombat' || m.category === 'Unplugged') && currentUser.completedMaterialIds?.includes(m.id)).length,
+                  total: ALL_MATERIALS.filter(m => m.category === 'MakeCode Arcade' || m.category === 'Game Logika (SpriteLab)' || m.category === 'CodeCombat' || m.category === 'Unplugged').length,
+                  barColor: 'bg-purple-500'
+                }
+              ].map(cat => {
+                const pct = Math.round((cat.done / (cat.total || 1)) * 100);
+                return (
+                  <div key={cat.label} className="p-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1">
+                      <span>{cat.label}</span>
+                      <span className="text-slate-500 dark:text-slate-400">{cat.done}/{cat.total}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div className={`h-full ${cat.barColor} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block text-right font-semibold">
+                      {pct}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Quick Statistics Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-center">

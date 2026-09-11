@@ -18,6 +18,7 @@ import { AuthModal } from './components/AuthModal';
 import { CertificateModal } from './components/CertificateModal';
 import { ProgressReportModal } from './components/ProgressReportModal';
 import { Leaderboard } from './components/Leaderboard';
+import { OnlineClassView } from './components/OnlineClassView';
 import { ToastNotification } from './components/ToastNotification';
 import { Material } from './types';
 import {
@@ -46,7 +47,7 @@ function MainLayout() {
     setViewingReportUser
   } = useApp();
 
-  const [currentTab, setCurrentTab] = useState<'home' | 'materi' | 'studios' | 'leaderboard' | 'admin' | 'instruktur' | 'sheets'>('home');
+  const [currentTab, setCurrentTab] = useState<'home' | 'materi' | 'studios' | 'leaderboard' | 'kelas_online' | 'admin' | 'instruktur' | 'sheets'>('home');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authDefaultTab, setAuthDefaultTab] = useState<'login' | 'register' | 'trial' | 'admin'>('login');
 
@@ -109,6 +110,8 @@ function MainLayout() {
             {currentTab === 'studios' && <StudioView />}
 
             {currentTab === 'leaderboard' && <Leaderboard />}
+
+            {currentTab === 'kelas_online' && <OnlineClassView />}
 
             {currentTab === 'admin' && <AdminPanel />}
 

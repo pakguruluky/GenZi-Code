@@ -26,6 +26,43 @@ export interface UserAccount {
   expiresAt?: string; // ISO date string when access expires, calculated from activatedAt + duration
   lastLoginAt?: string; // ISO date string of current login
   previousLoginAt?: string; // ISO date string of previous login for daily motivation check (>24h)
+  completedQuizzes?: Record<string, { score: number; passedAt: string }>;
+}
+
+export type MeetingPlatform = 'zoom' | 'gmeet';
+export type ClassStatus = 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
+
+export interface OnlineClassSchedule {
+  id: string;
+  title: string;
+  description?: string;
+  platform: MeetingPlatform;
+  meetingUrl: string;
+  meetingId?: string;
+  passcode?: string;
+  instructorName: string;
+  dateTime: string; // ISO string e.g. "2026-09-15T19:00"
+  durationMinutes: number;
+  targetAudience?: string;
+  status: ClassStatus;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+export interface ModuleQuiz {
+  materialId: string;
+  title: string;
+  questions: QuizQuestion[];
+  passingScore: number;
+  xpReward: number;
 }
 
 export type MaterialType = 'PDF' | 'Video';
