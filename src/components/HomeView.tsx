@@ -26,6 +26,7 @@ import {
 import { DURATION_OPTIONS } from '../utils/subscription';
 import { CurriculumShowcase } from './CurriculumShowcase';
 import { StudentProgressBar } from './StudentProgressBar';
+import { RecentActivitiesWidget } from './RecentActivitiesWidget';
 import { DailyMotivationBanner } from './DailyMotivationBanner';
 import { useApp } from '../context/AppContext';
 
@@ -33,12 +34,14 @@ interface HomeViewProps {
   onOpenAuth: (tab?: 'login' | 'register' | 'trial' | 'admin') => void;
   onNavigateToMaterials: () => void;
   onNavigateToStudios: () => void;
+  onNavigateToOnlineClass?: () => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
   onOpenAuth,
   onNavigateToMaterials,
-  onNavigateToStudios
+  onNavigateToStudios,
+  onNavigateToOnlineClass
 }) => {
   const { currentUser } = useApp();
 
@@ -142,6 +145,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
       <StudentProgressBar
         onOpenAuth={onOpenAuth}
         onNavigateToMaterials={onNavigateToMaterials}
+      />
+
+      {/* 2.1 AKTIVITAS TERAKHIR (5 AKSI TERKINI SISWA) */}
+      <RecentActivitiesWidget
+        onOpenAuth={onOpenAuth}
+        onNavigateToMaterials={onNavigateToMaterials}
+        onNavigateToOnlineClass={onNavigateToOnlineClass}
       />
 
       {/* 3. RESPONSIVE ACROSS ALL DEVICES BADGE */}

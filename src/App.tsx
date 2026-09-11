@@ -88,6 +88,7 @@ function MainLayout() {
             onOpenAuth={handleOpenAuth}
             onNavigateToMaterials={() => handleOpenAuth('login')}
             onNavigateToStudios={() => handleOpenAuth('login')}
+            onNavigateToOnlineClass={() => handleOpenAuth('login')}
           />
         ) : (
           // SETELAH LOGIN: SEMUA FITUR (MATERI, STUDIO, LEADERBOARD, DLL) TERBUKA
@@ -97,6 +98,7 @@ function MainLayout() {
                 onOpenAuth={handleOpenAuth}
                 onNavigateToMaterials={() => setCurrentTab('materi')}
                 onNavigateToStudios={() => setCurrentTab('studios')}
+                onNavigateToOnlineClass={() => setCurrentTab('kelas_online')}
               />
             )}
 

@@ -26,7 +26,8 @@ export const OnlineClassView: React.FC = () => {
     onlineClasses,
     createOnlineClass,
     updateOnlineClass,
-    deleteOnlineClass
+    deleteOnlineClass,
+    recordClassAttendance
   } = useApp();
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'upcoming' | 'completed'>('upcoming');
@@ -416,6 +417,7 @@ export const OnlineClassView: React.FC = () => {
                     href={cls.meetingUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => recordClassAttendance(cls)}
                     className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-xs ${
                       isZoom
                         ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200 dark:shadow-none hover:shadow-md'

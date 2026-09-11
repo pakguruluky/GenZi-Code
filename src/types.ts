@@ -27,6 +27,25 @@ export interface UserAccount {
   lastLoginAt?: string; // ISO date string of current login
   previousLoginAt?: string; // ISO date string of previous login for daily motivation check (>24h)
   completedQuizzes?: Record<string, { score: number; passedAt: string }>;
+  recentActivities?: StudentActivity[];
+}
+
+export type ActivityType = 'module_completed' | 'quiz_passed' | 'class_attended' | 'badge_earned' | 'studio_opened';
+
+export interface StudentActivity {
+  id: string;
+  type: ActivityType;
+  title: string;
+  description: string;
+  timestamp: string;
+  xpGained?: number;
+  metadata?: {
+    materialId?: string;
+    category?: string;
+    score?: number;
+    classId?: string;
+    platform?: string;
+  };
 }
 
 export type MeetingPlatform = 'zoom' | 'gmeet';

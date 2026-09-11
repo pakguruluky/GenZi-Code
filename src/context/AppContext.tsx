@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { UserAccount, UserRole, Material, SubscriptionDuration, ToastNotification, OnlineClassSchedule } from '../types';
+import { UserAccount, UserRole, Material, SubscriptionDuration, ToastNotification, OnlineClassSchedule, StudentActivity } from '../types';
 import { ALL_MATERIALS } from '../data/curriculumData';
 import {
   calculateExpirationDate,
@@ -124,6 +124,10 @@ interface AppContextType {
   deleteOnlineClass: (id: string) => Promise<{ success: boolean; message?: string }>;
   // Interactive Module Quizzes
   submitModuleQuiz: (materialId: string, score: number, totalQuestions: number) => Promise<{ passed: boolean; xpEarned: number }>;
+  // Student Activities History
+  addStudentActivity: (activity: Omit<StudentActivity, 'id' | 'timestamp'>) => Promise<void>;
+  recordClassAttendance: (cls: OnlineClassSchedule) => Promise<void>;
+  getStudentRecentActivities: (user?: UserAccount | null) => StudentActivity[];
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -749,11 +753,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       currentBadges.push('Bintang GenZi');
     }
 
+    const newActivity: StudentActivity = {
+      id: `act-mod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      type: 'module_completed',
+      title: `Menyelesaikan ${modSeq ? `Modul ${modSeq}` : 'Modul'}: ${modTitle}`,
+      description: `Berhasil menuntaskan modul kurikulum kategori ${completedMat?.category || 'GenZi Code'}`,
+      timestamp: new Date().toISOString(),
+      xpGained: earnedXp,
+      metadata: {
+        materialId,
+        category: completedMat?.category
+      }
+    };
+    const updatedActivities = [newActivity, ...(currentUser.recentActivities || [])].slice(0, 15);
+
     const updatedUser: UserAccount = {
       ...currentUser,
       completedMaterialIds: updatedIds,
       xp: newXp,
-      badges: currentBadges
+      badges: currentBadges,
+      recentActivities: updatedActivities
     };
 
     setCurrentUser(updatedUser);
@@ -1091,13 +1110,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
         : score;
 
+    const quizMat = ALL_MATERIALS.find(m => m.id === materialId);
+    const quizAct: StudentActivity = {
+      id: `act-quiz-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      type: 'quiz_passed',
+      title: `Lulus Kuis: ${quizMat?.title || 'Modul Evaluasi'} (${score}%)`,
+      description: `Menyelesaikan evaluasi pemahaman dengan perolehan skor ${score}%`,
+      timestamp: nowIso,
+      xpGained: earnedXp,
+      metadata: {
+        materialId,
+        score
+      }
+    };
+    const updatedActs = isPassed
+      ? [quizAct, ...(currentUser.recentActivities || [])].slice(0, 15)
+      : currentUser.recentActivities || [];
+
     const updatedUser: UserAccount = {
       ...currentUser,
       xp: newXp,
       quizScore: avgScore,
       quizCount: Object.keys(updatedQuizzes).length,
       completedQuizzes: updatedQuizzes,
-      completedMaterialIds: updatedCompletedIds
+      completedMaterialIds: updatedCompletedIds,
+      recentActivities: updatedActs
     };
 
     setCurrentUser(updatedUser);
@@ -1116,6 +1153,122 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return { passed: isPassed, xpEarned: earnedXp };
   };
+
+  // Student Activities Management
+  const addStudentActivity = async (activity: Omit<StudentActivity, 'id' | 'timestamp'>) => {
+    if (!currentUser) return;
+    const nowIso = new Date().toISOString();
+    const fullAct: StudentActivity = {
+      ...activity,
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: nowIso
+    };
+    const existing = currentUser.recentActivities || [];
+    const updatedActs = [fullAct, ...existing].slice(0, 15);
+    const updatedUser: UserAccount = {
+      ...currentUser,
+      recentActivities: updatedActs
+    };
+    setCurrentUser(updatedUser);
+    setUsers(prev => prev.map(u => (u.id === currentUser.id ? updatedUser : u)));
+    await syncUserToFirestore(updatedUser);
+  };
+
+  const recordClassAttendance = async (cls: OnlineClassSchedule) => {
+    if (!currentUser) return;
+    const nowIso = new Date().toISOString();
+    const existing = currentUser.recentActivities || [];
+
+    // Hindari duplikasi jika baru saja tercatat dalam 15 menit terakhir
+    const isRecentDuplicate = existing.some(
+      a => a.metadata?.classId === cls.id && (Date.now() - new Date(a.timestamp).getTime()) < 15 * 60 * 1000
+    );
+    if (isRecentDuplicate) return;
+
+    const classAct: StudentActivity = {
+      id: `act-cls-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      type: 'class_attended',
+      title: `Mengikuti Sesi Kelas Online: ${cls.title}`,
+      description: `Tatap muka live via ${cls.platform === 'zoom' ? 'Zoom Meeting' : 'Google Meet'} bersama ${cls.instructorName}`,
+      timestamp: nowIso,
+      metadata: {
+        classId: cls.id,
+        platform: cls.platform
+      }
+    };
+
+    const updatedActs = [classAct, ...existing].slice(0, 15);
+    const updatedUser: UserAccount = {
+      ...currentUser,
+      recentActivities: updatedActs
+    };
+    setCurrentUser(updatedUser);
+    setUsers(prev => prev.map(u => (u.id === currentUser.id ? updatedUser : u)));
+    await syncUserToFirestore(updatedUser);
+  };
+
+  const getStudentRecentActivities = useCallback((user?: UserAccount | null): StudentActivity[] => {
+    const target = user || currentUser;
+    if (!target) return [];
+
+    if (target.recentActivities && target.recentActivities.length > 0) {
+      return [...target.recentActivities]
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 5);
+    }
+
+    // Fallback realistis otomatis dari riwayat modul & kuis yang sudah selesai
+    const completedIds = target.completedMaterialIds || [];
+    const quizzes = target.completedQuizzes || {};
+    const fallbackActivities: StudentActivity[] = [];
+
+    const reversedCompleted = [...completedIds].reverse();
+    for (let i = 0; i < Math.min(3, reversedCompleted.length); i++) {
+      const matId = reversedCompleted[i];
+      const mat = ALL_MATERIALS.find(m => m.id === matId);
+      if (mat) {
+        fallbackActivities.push({
+          id: `act-mat-${mat.id}`,
+          type: 'module_completed',
+          title: `Menyelesaikan Modul #${mat.sequence}: ${mat.title}`,
+          description: `Berhasil menuntaskan seluruh instruksi proyek studio ${mat.category}`,
+          timestamp: new Date(Date.now() - (i + 1) * 3600 * 1000 * 2.5).toISOString(),
+          xpGained: 100,
+          metadata: { materialId: mat.id, category: mat.category }
+        });
+      }
+    }
+
+    const quizEntries = Object.entries(quizzes);
+    for (let j = 0; j < Math.min(2, quizEntries.length); j++) {
+      const [qMatId, qData] = quizEntries[j];
+      const mat = ALL_MATERIALS.find(m => m.id === qMatId);
+      fallbackActivities.push({
+        id: `act-quiz-${qMatId}`,
+        type: 'quiz_passed',
+        title: `Lulus Kuis Evaluasi ${mat ? `#${mat.sequence}` : ''} (${qData.score}%)`,
+        description: `Menyelesaikan kuis pemahaman konsep dengan skor prima ${qData.score}%`,
+        timestamp: qData.passedAt || new Date(Date.now() - 3600 * 1000 * 5).toISOString(),
+        xpGained: 50,
+        metadata: { materialId: qMatId, score: qData.score }
+      });
+    }
+
+    if (fallbackActivities.length === 0) {
+      fallbackActivities.push({
+        id: `act-welcome-${target.id}`,
+        type: 'badge_earned',
+        title: 'Mulai Petualangan Belajar di GenZi Code',
+        description: 'Akun aktif dan siap mengeksplorasi 54 modul coding & kurikulum berjenjang',
+        timestamp: target.registeredAt || new Date().toISOString(),
+        xpGained: 25
+      });
+    }
+
+    return fallbackActivities
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 5);
+  }, [currentUser]);
 
   return (
     <AppContext.Provider
@@ -1162,7 +1315,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createOnlineClass,
         updateOnlineClass,
         deleteOnlineClass,
-        submitModuleQuiz
+        submitModuleQuiz,
+        addStudentActivity,
+        recordClassAttendance,
+        getStudentRecentActivities
       }}
     >
       {children}

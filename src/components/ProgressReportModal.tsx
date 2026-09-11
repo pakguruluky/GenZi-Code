@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { UserAccount } from '../types';
 import { ALL_MATERIALS } from '../data/curriculumData';
 import {
@@ -15,7 +17,12 @@ import {
   Cpu,
   Bot,
   Copy,
-  Check
+  Check,
+  FileText,
+  Loader2,
+  Video,
+  Brain,
+  Zap
 } from 'lucide-react';
 
 interface ProgressReportModalProps {
@@ -26,6 +33,9 @@ interface ProgressReportModalProps {
 
 export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ student: propStudent, user: propUser, onClose }) => {
   const [copiedHtml, setCopiedHtml] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfSuccess, setPdfSuccess] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const student = propStudent || propUser;
 
@@ -34,6 +44,12 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
   const totalMaterials = ALL_MATERIALS.length;
   const completedCount = student.completedMaterialIds?.length || 0;
   const percentage = Math.min(100, Math.round((completedCount / (totalMaterials || 1)) * 100));
+
+  // Additional academic metrics
+  const quizCount = student.quizCount ?? (student.completedQuizzes ? Object.keys(student.completedQuizzes).length : 0);
+  const quizAvgScore = student.quizScore ?? (quizCount > 0 ? 100 : 0);
+  const classAttendanceCount = (student.recentActivities || []).filter(a => a.type === 'class_attended').length;
+  const totalXp = student.xp || (completedCount * 50 + quizCount * 25);
 
   // Calculate category breakdowns
   const scratchTotal = ALL_MATERIALS.filter(m => m.category === 'Scratch').length;
@@ -364,6 +380,22 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
       </tbody>
     </table>
 
+    <div class="section-title" style="margin-top: 24px;">🎯 Evaluasi Kuis & Partisipasi Kelas Online</div>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-val">${quizCount > 0 ? `${quizCount} Modul` : '0 Modul'}</div>
+        <div class="stat-label">Kuis Lulus (${quizAvgScore}%)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">${classAttendanceCount} Sesi</div>
+        <div class="stat-label">Kelas Live Diikuti</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">${totalXp} XP</div>
+        <div class="stat-label">Total Poin Gamifikasi</div>
+      </div>
+    </div>
+
     <div class="notes-box">
       <h4>Catatan Evaluasi & Umpan Balik Kepala Instruktur (Pak Guru Luky):</h4>
       <p>${notes}</p>
@@ -385,6 +417,59 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
   </div>
 </body>
 </html>`;
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!reportRef.current || isGeneratingPdf) return;
+    setIsGeneratingPdf(true);
+    setPdfSuccess(false);
+
+    try {
+      const element = reportRef.current;
+
+      // Render the DOM node to canvas using html2canvas
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+        heightLeft -= pageHeight;
+      }
+
+      const safeName = student.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+      pdf.save(`Rapor_Kemajuan_Belajar_${safeName}_GenZi_Code.pdf`);
+      setPdfSuccess(true);
+      setTimeout(() => setPdfSuccess(false), 4000);
+    } catch (err) {
+      console.error('Gagal generate PDF:', err);
+      // Fallback ramah jika html2canvas terhalang kebijakan browser
+      window.print();
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const handleDownloadHtml = () => {
@@ -430,34 +515,58 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center flex-wrap gap-2">
             <button
-              onClick={handleCopyHtml}
-              className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5"
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 disabled:opacity-75"
+              title="Unduh laporan lengkap dalam format file PDF resmi A4"
             >
-              {copiedHtml ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedHtml ? 'HTML Disalin' : 'Salin Kode HTML'}</span>
-            </button>
-
-            <button
-              onClick={handleDownloadHtml}
-              className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors flex items-center gap-1.5"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Unduh File .html</span>
+              {isGeneratingPdf ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Membuat PDF...</span>
+                </>
+              ) : pdfSuccess ? (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  <span>PDF Berhasil Diunduh!</span>
+                </>
+              ) : (
+                <>
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Unduh PDF</span>
+                </>
+              )}
             </button>
 
             <button
               onClick={handlePrint}
-              className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors flex items-center gap-1.5"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Cetak / PDF</span>
+              <span>Cetak</span>
+            </button>
+
+            <button
+              onClick={handleDownloadHtml}
+              className="hidden sm:inline-flex px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>HTML</span>
+            </button>
+
+            <button
+              onClick={handleCopyHtml}
+              className="hidden sm:inline-flex px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors items-center gap-1.5"
+            >
+              {copiedHtml ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedHtml ? 'Disalin' : 'Salin'}</span>
             </button>
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ml-1"
             >
               <X className="w-5 h-5" />
             </button>
@@ -465,8 +574,11 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
         </div>
 
         {/* Scrollable Report Preview Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100 dark:bg-slate-950">
-          <div className="max-w-3xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-10 shadow-sm print:p-0 print:border-none">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-200/70 dark:bg-slate-950">
+          <div
+            ref={reportRef}
+            className="max-w-3xl mx-auto bg-white text-slate-900 border border-slate-200 rounded-2xl p-6 sm:p-10 shadow-lg print:p-0 print:border-none print:shadow-none"
+          >
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-200 dark:border-slate-800 gap-4">
               <div>
@@ -646,6 +758,51 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
               </div>
             </div>
 
+            {/* Interactive Quizzes & Online Classes Summary */}
+            <div className="my-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl border border-violet-100 bg-violet-50/60 dark:border-violet-900/40 dark:bg-violet-950/20 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-violet-600 text-white flex items-center justify-center shrink-0">
+                  <Brain className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-violet-700 dark:text-violet-400 uppercase tracking-wider block">
+                    Evaluasi Kuis Pemahaman
+                  </span>
+                  <p className="font-bold text-slate-900 dark:text-white text-xs mt-0.5">
+                    {quizCount > 0 ? `${quizCount} Modul Lulus (${quizAvgScore}%)` : 'Belum Mulai Kuis'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-sky-100 bg-sky-50/60 dark:border-sky-900/40 dark:bg-sky-950/20 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-sky-600 text-white flex items-center justify-center shrink-0">
+                  <Video className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider block">
+                    Kelas Online & Mentoring
+                  </span>
+                  <p className="font-bold text-slate-900 dark:text-white text-xs mt-0.5">
+                    {classAttendanceCount > 0 ? `${classAttendanceCount} Sesi Dihadiri` : 'Tersedia di Jadwal Kelas'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-amber-100 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/20 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider block">
+                    Poin XP & Keaktifan
+                  </span>
+                  <p className="font-bold text-slate-900 dark:text-white text-xs mt-0.5">
+                    {totalXp} XP Terkumpul
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Evaluator Notes */}
             <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 my-6">
               <h4 className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider mb-1 flex items-center gap-1.5">
@@ -671,6 +828,31 @@ export const ProgressReportModal: React.FC<ProgressReportModalProps> = ({ studen
             <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800/80 text-center text-[10px] text-slate-400 dark:text-slate-500">
               © {new Date().getFullYear()} GenZi Code • @copyright by. Pak GuruAI
             </div>
+          </div>
+        </div>
+
+        {/* Modal Bottom Sticky Actions */}
+        <div className="no-print px-6 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/95 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shrink-0">
+          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 text-center sm:text-left">
+            <FileText className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>Dokumen PDF resmi A4 siap diunduh, dicetak, atau dikirimkan ke orang tua siswa.</span>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              className="w-full sm:w-auto px-4 py-2 text-xs font-black rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white shadow-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-75 cursor-pointer"
+            >
+              {isGeneratingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              <span>{isGeneratingPdf ? 'Memproses PDF...' : 'Unduh Rapor PDF'}</span>
+            </button>
+            <button
+              onClick={handlePrint}
+              className="px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Cetak Dokumen</span>
+            </button>
           </div>
         </div>
       </div>
