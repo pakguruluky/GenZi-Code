@@ -12,22 +12,52 @@ import {
   Minimize2,
   Sparkles,
   CheckCircle2,
-  Sliders
+  Sliders,
+  X
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ScratchLiveStudio } from './studios/ScratchLiveStudio';
 import { PictoBloxLiveStudio } from './studios/PictoBloxLiveStudio';
 import { MicrobitLiveStudio } from './studios/MicrobitLiveStudio';
 import { CodeCombatLiveStudio } from './studios/CodeCombatLiveStudio';
+import { StudioExitConfirmModal } from './StudioExitConfirmModal';
 
-export const StudioView: React.FC = () => {
+interface StudioViewProps {
+  onRequestClose?: () => void;
+}
+
+export const StudioView: React.FC<StudioViewProps> = ({ onRequestClose }) => {
   const { activeStudio, openStudio } = useApp();
   const [selectedStudioId, setSelectedStudioId] = useState<'scratch' | 'microbit' | 'pictoblox' | 'codecombat'>(
     activeStudio || 'scratch'
   );
   const [studioMode, setStudioMode] = useState<'interactive' | 'embed'>('interactive');
+  const [pendingStudioSwitch, setPendingStudioSwitch] = useState<'scratch' | 'microbit' | 'pictoblox' | 'codecombat' | null>(null);
+  const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
 
   const currentStudio = STUDIOS.find(s => s.id === selectedStudioId) || STUDIOS[0];
+  const targetSwitchStudio = STUDIOS.find(s => s.id === pendingStudioSwitch);
+
+  const handleStudioCardClick = (targetId: 'scratch' | 'microbit' | 'pictoblox' | 'codecombat') => {
+    if (targetId === selectedStudioId) return;
+    // Tampilkan dialog konfirmasi sebelum mengganti studio agar tidak hilang progres
+    setPendingStudioSwitch(targetId);
+    setShowSwitchConfirm(true);
+  };
+
+  const handleConfirmStudioSwitch = () => {
+    if (pendingStudioSwitch) {
+      setSelectedStudioId(pendingStudioSwitch);
+      openStudio(pendingStudioSwitch);
+    }
+    setShowSwitchConfirm(false);
+    setPendingStudioSwitch(null);
+  };
+
+  const handleCancelStudioSwitch = () => {
+    setShowSwitchConfirm(false);
+    setPendingStudioSwitch(null);
+  };
 
   const getStudioIcon = (id: string) => {
     switch (id) {
@@ -96,6 +126,17 @@ export const StudioView: React.FC = () => {
               <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
               Buka {currentStudio.name} di Tab Baru
             </a>
+
+            {onRequestClose && (
+              <button
+                onClick={onRequestClose}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/70 transition-colors shadow-xs cursor-pointer"
+                title="Tutup tab Studio coding dan kembali ke halaman materi"
+              >
+                <X className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                <span>Tutup Tab Studio</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -106,11 +147,8 @@ export const StudioView: React.FC = () => {
             return (
               <button
                 key={studio.id}
-                onClick={() => {
-                  setSelectedStudioId(studio.id);
-                  openStudio(studio.id);
-                }}
-                className={`p-4 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between ${
+                onClick={() => handleStudioCardClick(studio.id)}
+                className={`p-4 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
                   isSelected
                     ? 'border-indigo-600 bg-gradient-to-br from-indigo-50/70 to-white dark:from-slate-800 dark:to-slate-900 shadow-md ring-2 ring-indigo-500/20'
                     : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
@@ -242,6 +280,16 @@ export const StudioView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal Dialog Konfirmasi saat Berpindah Antar Studio */}
+      <StudioExitConfirmModal
+        isOpen={showSwitchConfirm}
+        onCancel={handleCancelStudioSwitch}
+        onConfirm={handleConfirmStudioSwitch}
+        targetDestination={targetSwitchStudio ? `Studio ${targetSwitchStudio.name}` : 'studio lain'}
+        activeStudioName={currentStudio.name}
+        isSwitchingStudio={true}
+      />
     </div>
   );
 };

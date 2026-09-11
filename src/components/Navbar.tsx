@@ -29,12 +29,14 @@ interface NavbarProps {
   currentTab: 'home' | 'materi' | 'studios' | 'leaderboard' | 'kelas_online' | 'admin' | 'instruktur' | 'sheets';
   setCurrentTab: (tab: 'home' | 'materi' | 'studios' | 'leaderboard' | 'kelas_online' | 'admin' | 'instruktur' | 'sheets') => void;
   onOpenAuth: (defaultTab?: 'login' | 'register' | 'trial' | 'admin') => void;
+  onRequestLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   setCurrentTab,
-  onOpenAuth
+  onOpenAuth,
+  onRequestLogout
 }) => {
   const {
     currentUser,
@@ -334,9 +336,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <div className="border-t border-slate-100 dark:border-slate-800 pt-1 mt-1 px-2">
                         <button
                           onClick={() => {
-                            logout();
-                            setCurrentTab('home');
                             setShowRoleMenu(false);
+                            if (currentTab === 'studios' && onRequestLogout) {
+                              onRequestLogout();
+                            } else {
+                              logout();
+                              setCurrentTab('home');
+                            }
                           }}
                           className="w-full text-left px-3 py-2 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 font-medium"
                         >

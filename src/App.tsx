@@ -20,6 +20,7 @@ import { ProgressReportModal } from './components/ProgressReportModal';
 import { Leaderboard } from './components/Leaderboard';
 import { OnlineClassView } from './components/OnlineClassView';
 import { ToastNotification } from './components/ToastNotification';
+import { StudioExitConfirmModal } from './components/StudioExitConfirmModal';
 import { Material } from './types';
 import {
   Code2,
@@ -35,19 +36,27 @@ import {
   Swords
 } from 'lucide-react';
 
+type TabType = 'home' | 'materi' | 'studios' | 'leaderboard' | 'kelas_online' | 'admin' | 'instruktur' | 'sheets';
+
 function MainLayout() {
   const {
     currentUser,
     selectedMaterial,
     openMaterial,
     openStudio,
+    activeStudio,
+    logout,
     viewingCertificateUser,
     setViewingCertificateUser,
     viewingReportUser,
     setViewingReportUser
   } = useApp();
 
-  const [currentTab, setCurrentTab] = useState<'home' | 'materi' | 'studios' | 'leaderboard' | 'kelas_online' | 'admin' | 'instruktur' | 'sheets'>('home');
+  const [currentTab, setCurrentTab] = useState<TabType>('home');
+  const [pendingTab, setPendingTab] = useState<TabType | null>(null);
+  const [showStudioExitAlert, setShowStudioExitAlert] = useState(false);
+  const [isPendingLogout, setIsPendingLogout] = useState(false);
+
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authDefaultTab, setAuthDefaultTab] = useState<'login' | 'register' | 'trial' | 'admin'>('login');
 
@@ -57,6 +66,97 @@ function MainLayout() {
       setCurrentTab('home');
     }
   }, [currentUser, currentTab]);
+
+  // Dialog konfirmasi (alert) browser saat mencoba menutup / reload tab browser di Studio
+  useEffect(() => {
+    if (currentTab !== 'studios') return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Kamu sedang membuka tab Studio Coding. Progres proyek coding yang belum disimpan mungkin akan hilang jika kamu menutup tab browser ini.';
+      return e.returnValue;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [currentTab]);
+
+  // Intersep navigasi saat berada di tab Studio agar tidak kehilangan progres pengerjaan proyek coding
+  const handleRequestTabChange = (targetTab: TabType) => {
+    if (currentTab === 'studios' && targetTab !== 'studios') {
+      setPendingTab(targetTab);
+      setIsPendingLogout(false);
+      setShowStudioExitAlert(true);
+    } else {
+      setCurrentTab(targetTab);
+    }
+  };
+
+  const handleRequestLogout = () => {
+    if (currentTab === 'studios') {
+      setPendingTab(null);
+      setIsPendingLogout(true);
+      setShowStudioExitAlert(true);
+    } else {
+      logout();
+      setCurrentTab('home');
+    }
+  };
+
+  const handleConfirmExitStudio = () => {
+    setShowStudioExitAlert(false);
+    if (isPendingLogout) {
+      logout();
+      setCurrentTab('home');
+      setIsPendingLogout(false);
+    } else if (pendingTab) {
+      setCurrentTab(pendingTab);
+      setPendingTab(null);
+    }
+  };
+
+  const handleCancelExitStudio = () => {
+    setShowStudioExitAlert(false);
+    setPendingTab(null);
+    setIsPendingLogout(false);
+  };
+
+  const getTargetTabName = (tab: TabType | null, isLogout: boolean): string => {
+    if (isLogout) return 'Keluar dari Akun (Logout)';
+    switch (tab) {
+      case 'home':
+        return 'Halaman Beranda';
+      case 'materi':
+        return 'Materi Belajar Berjenjang';
+      case 'leaderboard':
+        return 'Papan Peringkat (Leaderboard)';
+      case 'kelas_online':
+        return 'Jadwal Kelas Online';
+      case 'admin':
+        return 'Panel Administrator';
+      case 'instruktur':
+        return 'Panel Instruktur';
+      case 'sheets':
+        return 'Tabel Database Pengguna';
+      default:
+        return 'halaman lain';
+    }
+  };
+
+  const getActiveStudioLabel = (id?: string | null): string => {
+    switch (id) {
+      case 'microbit':
+        return 'BBC micro:bit MakeCode Simulator';
+      case 'pictoblox':
+        return 'PictoBlox AI & Machine Learning Studio';
+      case 'codecombat':
+        return 'CodeCombat RPG Python/JS';
+      default:
+        return 'Scratch 3.0 Live Studio';
+    }
+  };
 
   const handleOpenAuth = (tab: 'login' | 'register' | 'trial' | 'admin' = 'login') => {
     setAuthDefaultTab(tab);
@@ -73,8 +173,9 @@ function MainLayout() {
       {/* Navbar */}
       <Navbar
         currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
+        setCurrentTab={handleRequestTabChange}
         onOpenAuth={handleOpenAuth}
+        onRequestLogout={handleRequestLogout}
       />
 
       {/* Trial / Pending Notification Banner */}
@@ -96,9 +197,9 @@ function MainLayout() {
             {currentTab === 'home' && (
               <HomeView
                 onOpenAuth={handleOpenAuth}
-                onNavigateToMaterials={() => setCurrentTab('materi')}
-                onNavigateToStudios={() => setCurrentTab('studios')}
-                onNavigateToOnlineClass={() => setCurrentTab('kelas_online')}
+                onNavigateToMaterials={() => handleRequestTabChange('materi')}
+                onNavigateToStudios={() => handleRequestTabChange('studios')}
+                onNavigateToOnlineClass={() => handleRequestTabChange('kelas_online')}
               />
             )}
 
@@ -109,7 +210,9 @@ function MainLayout() {
               />
             )}
 
-            {currentTab === 'studios' && <StudioView />}
+            {currentTab === 'studios' && (
+              <StudioView onRequestClose={() => handleRequestTabChange('materi')} />
+            )}
 
             {currentTab === 'leaderboard' && <Leaderboard />}
 
@@ -136,8 +239,8 @@ function MainLayout() {
                   </p>
                   <div className="mt-6 flex justify-center gap-3">
                     <button
-                      onClick={() => setCurrentTab('materi')}
-                      className="px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-xs"
+                      onClick={() => handleRequestTabChange('materi')}
+                      className="px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-xs cursor-pointer"
                     >
                       Kembali ke Materi Belajar
                     </button>
@@ -173,6 +276,15 @@ function MainLayout() {
       <ProgressReportModal
         user={viewingReportUser}
         onClose={() => setViewingReportUser(null)}
+      />
+
+      {/* Studio Exit Confirmation Dialog (Alert) */}
+      <StudioExitConfirmModal
+        isOpen={showStudioExitAlert}
+        onCancel={handleCancelExitStudio}
+        onConfirm={handleConfirmExitStudio}
+        targetDestination={getTargetTabName(pendingTab, isPendingLogout)}
+        activeStudioName={getActiveStudioLabel(activeStudio)}
       />
 
       {/* Floating Interactive Toast Feedback System */}
