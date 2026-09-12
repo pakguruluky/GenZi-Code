@@ -40,6 +40,28 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id", "studioType", "title"]
+    },
+    "OnlineClassSchedule": {
+      "title": "OnlineClassSchedule",
+      "description": "Scheduled online live tutoring classes via Zoom or Google Meet",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "platform": { "type": "string", "enum": ["zoom", "gmeet"] },
+        "meetingUrl": { "type": "string" },
+        "meetingId": { "type": "string" },
+        "passcode": { "type": "string" },
+        "instructorName": { "type": "string" },
+        "dateTime": { "type": "string" },
+        "durationMinutes": { "type": "number" },
+        "targetAudience": { "type": "string" },
+        "status": { "type": "string", "enum": ["scheduled", "ongoing", "completed", "cancelled"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "platform", "meetingUrl", "instructorName", "dateTime", "durationMinutes", "status"]
     }
   },
   "firestore": {
@@ -50,6 +72,10 @@
     "/genzi_projects/{projectId}": {
       "schema": "StudioProject",
       "description": "User created projects from Scratch, PictoBlox, and Microbit studios"
+    },
+    "/genzi_online_classes/{classId}": {
+      "schema": "OnlineClassSchedule",
+      "description": "Online live class schedules"
     }
   }
 }

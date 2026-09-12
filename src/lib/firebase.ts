@@ -2,8 +2,10 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   initializeFirestore,
   getFirestore,
-  collection,
+  setLogLevel,
   doc,
+  getDocFromServer,
+  collection,
   setDoc,
   getDocs,
   updateDoc,
@@ -25,7 +27,14 @@ export const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseAppletConfig.appId,
 };
 
-// Initialize Cloud Database with Long Polling and undefined property tolerance
+// Suppress non-fatal connection retry warnings from internal WebChannel logger
+try {
+  setLogLevel('error');
+} catch {
+  // ignore
+}
+
+// Initialize Cloud Database with Auto-Detect Long Polling and undefined property tolerance
 let app: any = null;
 let db: Firestore | null = null;
 let auth: any = null;
@@ -37,7 +46,7 @@ try {
       app,
       {
         ignoreUndefinedProperties: true,
-        experimentalForceLongPolling: true,
+        experimentalAutoDetectLongPolling: true,
       },
       firebaseConfig.firestoreDatabaseId
     );
@@ -51,6 +60,70 @@ try {
 
 export const getDb = (): Firestore | null => db;
 export { app, db, auth };
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
+      emailVerified: auth?.currentUser?.emailVerified,
+      isAnonymous: auth?.currentUser?.isAnonymous,
+      tenantId: auth?.currentUser?.tenantId,
+      providerInfo: auth?.currentUser?.providerData?.map((provider: any) => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+// Validate connection to Firestore on boot as per Firebase Skill guidelines
+export async function testConnection(): Promise<boolean> {
+  if (!db) return false;
+  try {
+    await getDocFromServer(doc(db, 'test', 'connection'));
+    return true;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.warn("Firestore connection notice: The client is currently operating in offline/cached mode.");
+    }
+    return false;
+  }
+}
+
+// Run connection check in background safely
+testConnection().catch(() => {});
 
 const USERS_COLLECTION = 'genzi_users';
 const PROJECTS_COLLECTION = 'genzi_projects';
@@ -212,7 +285,11 @@ export function subscribeToUsers(onUpdate: (users: UserAccount[]) => void): () =
         }
       },
       (error) => {
-        console.warn('Realtime database listener notice:', error);
+        if (error?.code === 'permission-denied') {
+          handleFirestoreError(error, OperationType.LIST, USERS_COLLECTION);
+        } else {
+          console.warn('Realtime database listener notice:', error?.message || error);
+        }
       }
     );
     return unsub;
@@ -238,6 +315,9 @@ export async function saveOnlineClassToFirestore(cls: OnlineClassSchedule): Prom
     console.log('[Firestore] Jadwal kelas online tersimpan:', cls.title, cls.id);
     return { success: true };
   } catch (error: any) {
+    if (error?.code === 'permission-denied') {
+      handleFirestoreError(error, OperationType.WRITE, ONLINE_CLASSES_COLLECTION);
+    }
     console.error('[Firestore] Gagal menyimpan kelas online:', error);
     return { success: false, error: error?.message || 'Gagal menyimpan kelas online' };
   }
@@ -250,7 +330,10 @@ export async function deleteOnlineClassFromFirestore(classId: string): Promise<b
     await deleteDoc(classRef);
     console.log('[Firestore] Kelas online dihapus:', classId);
     return true;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'permission-denied') {
+      handleFirestoreError(error, OperationType.DELETE, ONLINE_CLASSES_COLLECTION);
+    }
     console.error('[Firestore] Gagal menghapus kelas online:', error);
     return false;
   }
@@ -262,7 +345,10 @@ export async function fetchAllOnlineClassesFromFirestore(): Promise<OnlineClassS
     const snapshot = await getDocs(collection(db, ONLINE_CLASSES_COLLECTION));
     if (snapshot.empty) return [];
     return snapshot.docs.map(d => d.data() as OnlineClassSchedule);
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'permission-denied') {
+      handleFirestoreError(error, OperationType.LIST, ONLINE_CLASSES_COLLECTION);
+    }
     console.warn('[Firestore] Error fetch online classes:', error);
     return null;
   }
@@ -284,7 +370,11 @@ export function subscribeToOnlineClasses(onUpdate: (classes: OnlineClassSchedule
         }
       },
       (error) => {
-        console.warn('Realtime online classes listener notice:', error);
+        if (error?.code === 'permission-denied') {
+          handleFirestoreError(error, OperationType.LIST, ONLINE_CLASSES_COLLECTION);
+        } else {
+          console.warn('Realtime online classes listener notice:', error?.message || error);
+        }
       }
     );
     return unsub;

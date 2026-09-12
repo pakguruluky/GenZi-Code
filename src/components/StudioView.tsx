@@ -13,7 +13,8 @@ import {
   Sparkles,
   CheckCircle2,
   Sliders,
-  X
+  X,
+  Compass
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ScratchLiveStudio } from './studios/ScratchLiveStudio';
@@ -21,6 +22,7 @@ import { PictoBloxLiveStudio } from './studios/PictoBloxLiveStudio';
 import { MicrobitLiveStudio } from './studios/MicrobitLiveStudio';
 import { CodeCombatLiveStudio } from './studios/CodeCombatLiveStudio';
 import { StudioExitConfirmModal } from './StudioExitConfirmModal';
+import { startStudioTour } from '../utils/studioTour';
 
 interface StudioViewProps {
   onRequestClose?: () => void;
@@ -34,9 +36,43 @@ export const StudioView: React.FC<StudioViewProps> = ({ onRequestClose }) => {
   const [studioMode, setStudioMode] = useState<'interactive' | 'embed'>('interactive');
   const [pendingStudioSwitch, setPendingStudioSwitch] = useState<'scratch' | 'microbit' | 'pictoblox' | 'codecombat' | null>(null);
   const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
+  const [showTourBanner, setShowTourBanner] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('genzi_studio_tour_done') !== 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const currentStudio = STUDIOS.find(s => s.id === selectedStudioId) || STUDIOS[0];
   const targetSwitchStudio = STUDIOS.find(s => s.id === pendingStudioSwitch);
+
+  const handleStartTour = () => {
+    // Switch to interactive mode if currently in embed mode
+    if (studioMode !== 'interactive') {
+      setStudioMode('interactive');
+    }
+    // Switch to scratch studio as it holds all blocks, categories, stage, and sprite controls
+    if (selectedStudioId !== 'scratch') {
+      setSelectedStudioId('scratch');
+      openStudio('scratch');
+    }
+    setShowTourBanner(false);
+    try {
+      localStorage.setItem('genzi_studio_tour_done', 'true');
+    } catch {
+      // ignore
+    }
+
+    setTimeout(() => {
+      startStudioTour({
+        onRequestStudio: (id) => {
+          setSelectedStudioId(id);
+          openStudio(id);
+        }
+      });
+    }, 180);
+  };
 
   const handleStudioCardClick = (targetId: 'scratch' | 'microbit' | 'pictoblox' | 'codecombat') => {
     if (targetId === selectedStudioId) return;
@@ -76,6 +112,47 @@ export const StudioView: React.FC<StudioViewProps> = ({ onRequestClose }) => {
 
   return (
     <div className="space-y-6">
+      {/* First-time Student Welcome Tour Banner */}
+      {showTourBanner && (
+        <div className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-pink-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                Baru Pertama Kali di Studio Coding?
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Ikuti tur panduan interaktif singkat untuk memahami cara menyusun balok logika, mengontrol sprite di stage animasi, dan menyimpan karyamu ke database.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            <button
+              onClick={() => {
+                setShowTourBanner(false);
+                try {
+                  localStorage.setItem('genzi_studio_tour_done', 'true');
+                } catch {
+                  // ignore
+                }
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors cursor-pointer"
+            >
+              Nanti Saja
+            </button>
+            <button
+              onClick={handleStartTour}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>Mulai Panduan Tur</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Studio Header & Selector */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -94,7 +171,18 @@ export const StudioView: React.FC<StudioViewProps> = ({ onRequestClose }) => {
 
           {/* Mode Switcher & Direct links */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+            {/* Interactive Tour Button */}
+            <button
+              id="tour-start-header-btn"
+              onClick={handleStartTour}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white transition-all shadow-xs active:scale-95 cursor-pointer"
+              title="Buka Panduan Tur Fitur Interaktif Studio"
+            >
+              <Compass className="w-3.5 h-3.5 text-amber-300" />
+              <span>Panduan Tur</span>
+            </button>
+
+            <div id="tour-studio-mode" className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
               <button
                 onClick={() => setStudioMode('interactive')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
@@ -141,7 +229,7 @@ export const StudioView: React.FC<StudioViewProps> = ({ onRequestClose }) => {
         </div>
 
         {/* Studio Tabs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+        <div id="tour-studio-selector" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
           {STUDIOS.map(studio => {
             const isSelected = studio.id === selectedStudioId;
             return (

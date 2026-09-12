@@ -34,7 +34,8 @@ import {
   ZoomOut,
   Cloud,
   Eye,
-  EyeOff
+  EyeOff,
+  Compass
 } from 'lucide-react';
 import {
   BlockTemplate,
@@ -45,6 +46,7 @@ import {
 import { SPRITES, BACKDROPS, SpriteItem, BackdropItem } from './spritesData';
 import { playCatMeow, playPop, playJumpSound, stopAllAudio } from '../../utils/studioAudio';
 import { saveProjectToFirestore, fetchProjectsFromFirestore } from '../../lib/firebase';
+import { startStudioTour } from '../../utils/studioTour';
 
 export const ScratchLiveStudio: React.FC = () => {
   // Preset Projects
@@ -687,7 +689,10 @@ export const ScratchLiveStudio: React.FC = () => {
       }`}
     >
       {/* Scratch Authentic Top Header: #855CD6 */}
-      <div className="bg-[#855CD6] text-white px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 shadow-xs border-b border-[#7344CC] shrink-0 text-xs">
+      <div
+        id="tour-scratch-topbar"
+        className="bg-[#855CD6] text-white px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 shadow-xs border-b border-[#7344CC] shrink-0 text-xs"
+      >
         <div className="flex items-center gap-2">
           {/* Authentic Scratch Logo */}
           <a
@@ -807,6 +812,17 @@ export const ScratchLiveStudio: React.FC = () => {
             <span>Tutorial</span>
           </button>
 
+          {/* Tour Button for Students */}
+          <button
+            id="tour-scratch-btn"
+            onClick={() => startStudioTour()}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/20 hover:bg-white/30 text-white font-bold transition-all shadow-xs active:scale-95"
+            title="Mulai Panduan Tur Fitur Studio Scratch"
+          >
+            <Compass className="w-3.5 h-3.5 text-amber-300" />
+            <span>Tur Studio</span>
+          </button>
+
           {/* Project Title Input with Cloud Status */}
           <div className="flex items-center bg-black/20 hover:bg-black/30 focus-within:bg-white focus-within:text-slate-900 text-white rounded-md px-2.5 py-1 transition-colors">
             <input
@@ -819,20 +835,22 @@ export const ScratchLiveStudio: React.FC = () => {
           </div>
 
           {/* Cloud Save Button connected to Database */}
-          <button
-            onClick={handleSaveToCloud}
-            disabled={isSavingToCloud}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FF8C1A] hover:bg-[#E67E17] text-white font-bold transition-all shadow-xs active:scale-95"
-            title="Simpan Proyek ke Cloud Database genzi-code"
-          >
-            <Cloud className="w-3.5 h-3.5" />
-            <span>{isSavingToCloud ? 'Menyimpan...' : 'Simpan ke Cloud'}</span>
-          </button>
-          {cloudSaveStatus && (
-            <span className="text-[11px] font-bold text-amber-200">
-              ✓ {cloudSaveStatus}
-            </span>
-          )}
+          <div id="tour-cloud-save" className="flex items-center gap-1.5">
+            <button
+              onClick={handleSaveToCloud}
+              disabled={isSavingToCloud}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FF8C1A] hover:bg-[#E67E17] text-white font-bold transition-all shadow-xs active:scale-95"
+              title="Simpan Proyek ke Cloud Database genzi-code"
+            >
+              <Cloud className="w-3.5 h-3.5" />
+              <span>{isSavingToCloud ? 'Menyimpan...' : 'Simpan ke Cloud'}</span>
+            </button>
+            {cloudSaveStatus && (
+              <span className="text-[11px] font-bold text-amber-200">
+                ✓ {cloudSaveStatus}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Right Side: Account links & MIT Official button */}
@@ -904,7 +922,7 @@ export const ScratchLiveStudio: React.FC = () => {
         </div>
 
         {/* Right (Above Stage): Green Flag ⚑, Red Stop 🛑, Stage Layout Modes */}
-        <div className="flex items-center gap-2">
+        <div id="tour-run-controls" className="flex items-center gap-2">
           {/* Green Flag Button */}
           <button
             onClick={handleRun}
@@ -962,7 +980,10 @@ export const ScratchLiveStudio: React.FC = () => {
         {activeStudioTab === 'code' ? (
           <>
             {/* COLUMN 1: Narrow Category Selection Bar (w-14 / 56px) matching Scratch 3.0 */}
-            <div className="w-14 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-2 justify-between shrink-0 select-none overflow-y-auto">
+            <div
+              id="tour-block-categories"
+              className="w-14 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-2 justify-between shrink-0 select-none overflow-y-auto"
+            >
               <div className="flex flex-col items-center gap-2 w-full">
                 {categories.map(cat => {
                   const isSelected = selectedCategory === cat.id;
@@ -998,7 +1019,10 @@ export const ScratchLiveStudio: React.FC = () => {
             </div>
 
             {/* COLUMN 2: Blocks Palette (w-60 to w-64) */}
-            <div className="w-64 bg-slate-50 dark:bg-slate-900/90 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0">
+            <div
+              id="tour-block-palette"
+              className="w-64 bg-slate-50 dark:bg-slate-900/90 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0"
+            >
               <div className="p-2 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 flex items-center justify-between">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   {categories.find(c => c.id === selectedCategory)?.label}
@@ -1027,6 +1051,7 @@ export const ScratchLiveStudio: React.FC = () => {
 
             {/* COLUMN 3: Central Scripts Workspace Canvas */}
             <div
+              id="tour-code-workspace"
               className="flex-1 bg-[#F9F9F9] dark:bg-slate-950 flex flex-col overflow-hidden border-r border-slate-200 dark:border-slate-800 relative"
               style={{
                 backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)',
@@ -1366,7 +1391,7 @@ export const ScratchLiveStudio: React.FC = () => {
           }`}
         >
           {/* REAL STAGE CANVAS VIEWPORT */}
-          <div className="p-2.5 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+          <div id="tour-stage-area" className="p-2.5 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
             <div
               ref={stageRef}
               onMouseDown={handleStageMouseDown}
@@ -1426,7 +1451,10 @@ export const ScratchLiveStudio: React.FC = () => {
           </div>
 
           {/* AUTHENTIC SPRITE PROPERTIES TOOLBAR */}
-          <div className="px-3 py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div
+            id="tour-sprite-properties"
+            className="px-3 py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs"
+          >
             {/* Sprite Name */}
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] font-bold text-slate-500">Sprite</span>
@@ -1505,7 +1533,7 @@ export const ScratchLiveStudio: React.FC = () => {
           </div>
 
           {/* DUAL PANE: Sprites Area (Left) + Stage Backdrop Area (Right) */}
-          <div className="flex-1 flex overflow-hidden">
+          <div id="tour-sprite-backdrop-pane" className="flex-1 flex overflow-hidden">
             {/* SPRITES LIST (65% width) */}
             <div className="flex-1 border-r border-slate-200 dark:border-slate-800 p-2.5 flex flex-col justify-between overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50">
               <div>
