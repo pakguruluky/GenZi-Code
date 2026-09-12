@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import firebaseAppletConfig from '../../firebase-applet-config.json';
-import { UserAccount, OnlineClassSchedule } from '../types';
+import { UserAccount, OnlineClassSchedule, QuizSubmission } from '../types';
 
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseAppletConfig.apiKey,
@@ -381,6 +381,49 @@ export function subscribeToOnlineClasses(onUpdate: (classes: OnlineClassSchedule
   } catch (err) {
     console.warn('Failed to subscribe to online classes:', err);
     return () => {};
+  }
+}
+
+const QUIZ_SUBMISSIONS_COLLECTION = 'genzi_quiz_submissions';
+
+export async function saveQuizSubmissionToFirestore(sub: QuizSubmission): Promise<{ success: boolean; error?: string }> {
+  if (!db) {
+    return { success: false, error: 'Database belum terinisialisasi' };
+  }
+  try {
+    const subRef = doc(db, QUIZ_SUBMISSIONS_COLLECTION, sub.id);
+    const cleaned = sanitizeForFirestore({
+      ...sub,
+      updatedAt: new Date().toISOString()
+    });
+    await setDoc(subRef, cleaned, { merge: true });
+    console.log('[Firestore] Hasil Post Test tersimpan:', sub.materialTitle, `Skor: ${sub.score}%`, sub.id);
+    return { success: true };
+  } catch (error: any) {
+    if (error?.code === 'permission-denied') {
+      handleFirestoreError(error, OperationType.WRITE, QUIZ_SUBMISSIONS_COLLECTION);
+    }
+    console.error('[Firestore] Gagal menyimpan hasil post test:', error);
+    return { success: false, error: error?.message || 'Gagal menyimpan hasil post test' };
+  }
+}
+
+export async function fetchQuizSubmissionsFromFirestore(userId?: string): Promise<QuizSubmission[]> {
+  if (!db) return [];
+  try {
+    const snapshot = await getDocs(collection(db, QUIZ_SUBMISSIONS_COLLECTION));
+    if (snapshot.empty) return [];
+    const list = snapshot.docs.map(d => d.data() as QuizSubmission);
+    if (userId) {
+      return list.filter(s => s.userId === userId);
+    }
+    return list;
+  } catch (error: any) {
+    if (error?.code === 'permission-denied') {
+      handleFirestoreError(error, OperationType.LIST, QUIZ_SUBMISSIONS_COLLECTION);
+    }
+    console.warn('[Firestore] Error fetch quiz submissions:', error);
+    return [];
   }
 }
 

@@ -62,6 +62,27 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id", "title", "platform", "meetingUrl", "instructorName", "dateTime", "durationMinutes", "status"]
+    },
+    "QuizSubmission": {
+      "title": "QuizSubmission",
+      "description": "Post-test submissions recorded for each student and material",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentEmail": { "type": "string" },
+        "materialId": { "type": "string" },
+        "materialTitle": { "type": "string" },
+        "category": { "type": "string" },
+        "score": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "correctCount": { "type": "number" },
+        "passed": { "type": "boolean" },
+        "xpEarned": { "type": "number" },
+        "submittedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "materialId", "score", "passed"]
     }
   },
   "firestore": {
@@ -76,6 +97,10 @@
     "/genzi_online_classes/{classId}": {
       "schema": "OnlineClassSchedule",
       "description": "Online live class schedules"
+    },
+    "/genzi_quiz_submissions/{submissionId}": {
+      "schema": "QuizSubmission",
+      "description": "Historical records of student post-test attempts and results"
     }
   }
 }

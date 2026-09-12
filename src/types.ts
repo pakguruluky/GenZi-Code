@@ -26,8 +26,30 @@ export interface UserAccount {
   expiresAt?: string; // ISO date string when access expires, calculated from activatedAt + duration
   lastLoginAt?: string; // ISO date string of current login
   previousLoginAt?: string; // ISO date string of previous login for daily motivation check (>24h)
-  completedQuizzes?: Record<string, { score: number; passedAt: string }>;
+  completedQuizzes?: Record<string, {
+    score: number;
+    passedAt: string;
+    totalQuestions?: number;
+    correctCount?: number;
+    xpEarned?: number;
+  }>;
   recentActivities?: StudentActivity[];
+}
+
+export interface QuizSubmission {
+  id: string;
+  userId: string;
+  studentName: string;
+  studentEmail?: string;
+  materialId: string;
+  materialTitle: string;
+  category?: string;
+  score: number;
+  totalQuestions: number;
+  correctCount: number;
+  passed: boolean;
+  xpEarned: number;
+  submittedAt: string;
 }
 
 export type ActivityType = 'module_completed' | 'quiz_passed' | 'class_attended' | 'badge_earned' | 'studio_opened';

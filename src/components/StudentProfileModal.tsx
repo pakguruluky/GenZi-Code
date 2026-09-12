@@ -17,7 +17,8 @@ import {
   Flame,
   User,
   Layers,
-  ChevronRight
+  ChevronRight,
+  HelpCircle
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ALL_MATERIALS } from '../data/curriculumData';
@@ -355,10 +356,13 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ isOpen
 
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-center">
               <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-                XP Tiap Modul
+                Post Test Lulus
               </span>
               <span className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1 block">
-                +100 <span className="text-xs font-normal text-slate-400">XP</span>
+                {currentUser.quizCount || Object.keys(currentUser.completedQuizzes || {}).length}{' '}
+                <span className="text-xs font-normal text-slate-400">
+                  ({currentUser.quizScore ? `${currentUser.quizScore}%` : '0%'})
+                </span>
               </span>
             </div>
 

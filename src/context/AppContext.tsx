@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { UserAccount, UserRole, Material, SubscriptionDuration, ToastNotification, OnlineClassSchedule, StudentActivity } from '../types';
+import { UserAccount, UserRole, Material, SubscriptionDuration, ToastNotification, OnlineClassSchedule, StudentActivity, QuizSubmission } from '../types';
 import { ALL_MATERIALS } from '../data/curriculumData';
 import {
   calculateExpirationDate,
@@ -15,7 +15,8 @@ import {
   saveOnlineClassToFirestore,
   deleteOnlineClassFromFirestore,
   fetchAllOnlineClassesFromFirestore,
-  subscribeToOnlineClasses
+  subscribeToOnlineClasses,
+  saveQuizSubmissionToFirestore
 } from '../lib/firebase';
 import confetti from 'canvas-confetti';
 
@@ -737,6 +738,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
+    // Siswa dan akun trial wajib lulus Post Test terlebih dahulu
+    if (currentUser.role === 'siswa' || currentUser.role === 'trial') {
+      const quizResult = currentUser.completedQuizzes?.[materialId];
+      const isPostTestPassed = quizResult && quizResult.score >= 60;
+      if (!isPostTestPassed) {
+        showToast({
+          type: 'info',
+          title: 'Post Test Wajib Dikerjakan',
+          message: `Untuk menyelesaikan ${modSeq} "${modTitle}" dan membuka jenjang modul berikutnya, kamu wajib mengerjakan dan lulus Post Test (skor minimal 60%) di bagian bawah modul!`,
+          duration: 4500
+        });
+        return;
+      }
+    }
+
     const updatedIds = [...currentUser.completedMaterialIds, materialId];
     const earnedXp = 100;
     const currentXp = currentUser.xp || 0;
@@ -892,11 +908,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Sequential check: Sequence 1 is always unlocked for active student
     if (material.sequence === 1) return true;
 
-    // A material is unlocked if the immediately preceding material has been completed
+    // A material is unlocked if the immediately preceding material has been completed AND post-test passed
     const previousMaterial = ALL_MATERIALS.find(m => m.sequence === material.sequence - 1);
     if (!previousMaterial) return true;
 
-    return currentUser.completedMaterialIds.includes(previousMaterial.id);
+    const isPrevCompleted = currentUser.completedMaterialIds.includes(previousMaterial.id);
+    const prevQuiz = currentUser.completedQuizzes?.[previousMaterial.id];
+    const isPrevQuizPassed = prevQuiz ? prevQuiz.score >= 60 : isPrevCompleted;
+
+    return isPrevCompleted && isPrevQuizPassed;
   };
 
   const canAccessMaterial = (material: Material): { allowed: boolean; reason?: string } => {
@@ -942,9 +962,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (!isMaterialUnlocked(material)) {
       const prev = ALL_MATERIALS.find(m => m.sequence === material.sequence - 1);
+      const prevTitle = prev ? `Modul #${prev.sequence}: ${prev.title}` : `Modul #${material.sequence - 1}`;
       return {
         allowed: false,
-        reason: `Materi ini terkunci. Anda harus menyelesaikan materi sebelumnya (${prev ? prev.title : 'Modul ' + (material.sequence - 1)}) terlebih dahulu.`
+        reason: `Materi ini terkunci. Anda harus menyelesaikan materi sebelumnya (${prevTitle}) dan lulus Post Test (skor minimal 60%) terlebih dahulu untuk membuka jenjang modul berikutnya.`
       };
     }
 
@@ -1074,7 +1095,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: false, message: 'Gagal menghapus dari database' };
   };
 
-  // Kuis Interaktif Akhir Modul
+  // Kuis Post Test Interaktif Akhir Modul
   const submitModuleQuiz = async (
     materialId: string,
     score: number,
@@ -1082,12 +1103,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<{ passed: boolean; xpEarned: number }> => {
     if (!currentUser) return { passed: false, xpEarned: 0 };
 
-    const isPassed = score >= 66;
+    const isPassed = score >= 60;
     const nowIso = new Date().toISOString();
     const currentCompletedQuizzes = currentUser.completedQuizzes || {};
-    const alreadyPassedBefore = (currentCompletedQuizzes[materialId]?.score ?? 0) >= 66;
+    const alreadyPassedBefore = (currentCompletedQuizzes[materialId]?.score ?? 0) >= 60;
 
-    const earnedXp = isPassed && !alreadyPassedBefore ? 50 : 0;
+    // Perolehan XP: 75 XP saat pertama kali lulus, +25 bonus jika nilai sempurna 100%
+    const earnedXp = isPassed && !alreadyPassedBefore ? (score === 100 ? 100 : 75) : 0;
     const newXp = (currentUser.xp || 0) + earnedXp;
 
     const currentCompletedMaterials = currentUser.completedMaterialIds || [];
@@ -1096,11 +1118,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ? [...currentCompletedMaterials, materialId]
         : currentCompletedMaterials;
 
+    const correctCount = Math.round((score / 100) * totalQuestions);
+
     const updatedQuizzes = {
       ...currentCompletedQuizzes,
       [materialId]: {
         score,
-        passedAt: nowIso
+        passedAt: nowIso,
+        totalQuestions,
+        correctCount,
+        xpEarned: earnedXp
       }
     };
 
@@ -1111,11 +1138,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         : score;
 
     const quizMat = ALL_MATERIALS.find(m => m.id === materialId);
+    const modSeq = quizMat?.sequence ? `#${quizMat.sequence}` : '';
+
+    // Badges Gamification check
+    const currentBadges = [...(currentUser.badges || [])];
+    if (updatedCompletedIds.length >= 1 && !currentBadges.includes('Langkah Pertama')) {
+      currentBadges.push('Langkah Pertama');
+    }
+    if (updatedCompletedIds.length >= 5 && !currentBadges.includes('Penjelajah Kode')) {
+      currentBadges.push('Penjelajah Kode');
+    }
+    if (updatedCompletedIds.length >= 10 && !currentBadges.includes('Bintang GenZi')) {
+      currentBadges.push('Bintang GenZi');
+    }
+
     const quizAct: StudentActivity = {
       id: `act-quiz-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       type: 'quiz_passed',
-      title: `Lulus Kuis: ${quizMat?.title || 'Modul Evaluasi'} (${score}%)`,
-      description: `Menyelesaikan evaluasi pemahaman dengan perolehan skor ${score}%`,
+      title: `Lulus Post Test: ${quizMat?.title || 'Modul'} (${score}%)`,
+      description: `Menyelesaikan evaluasi pemahaman ${modSeq} dengan ${correctCount}/${totalQuestions} soal benar (${score}%)`,
       timestamp: nowIso,
       xpGained: earnedXp,
       metadata: {
@@ -1123,6 +1164,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         score
       }
     };
+
     const updatedActs = isPassed
       ? [quizAct, ...(currentUser.recentActivities || [])].slice(0, 15)
       : currentUser.recentActivities || [];
@@ -1132,6 +1174,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       xp: newXp,
       quizScore: avgScore,
       quizCount: Object.keys(updatedQuizzes).length,
+      badges: currentBadges,
       completedQuizzes: updatedQuizzes,
       completedMaterialIds: updatedCompletedIds,
       recentActivities: updatedActs
@@ -1139,15 +1182,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setCurrentUser(updatedUser);
     setUsers(prev => prev.map(u => (u.id === currentUser.id ? updatedUser : u)));
-    await syncUserToFirestore(updatedUser);
+
+    // Simpan riwayat submission Post Test dan update User ke Cloud Database (Firestore)
+    const submission: QuizSubmission = {
+      id: `sub-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      userId: currentUser.id,
+      studentName: currentUser.name,
+      studentEmail: currentUser.email,
+      materialId,
+      materialTitle: quizMat?.title || 'Modul Pembelajaran',
+      category: quizMat?.category,
+      score,
+      totalQuestions,
+      correctCount,
+      passed: isPassed,
+      xpEarned: earnedXp,
+      submittedAt: nowIso
+    };
+
+    try {
+      await Promise.all([
+        syncUserToFirestore(updatedUser),
+        saveQuizSubmissionToFirestore(submission)
+      ]);
+    } catch (err) {
+      console.warn('Sync Post Test to Firestore notice:', err);
+    }
 
     if (isPassed) {
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      } catch (e) {
+        // ignore confetti errors
+      }
+
       showToast({
         type: 'xp',
-        title: '🧠 Kuis Lulus!',
-        message: `Nilai kuis kamu ${score}%. ${earnedXp > 0 ? `+${earnedXp} XP berhasil didapatkan!` : ''} Modul pembelajaran berikutnya kini telah terbuka!`,
+        title: '🎉 Post Test Berhasil Lulus!',
+        message: `Skor kamu ${score}%. ${earnedXp > 0 ? `+${earnedXp} XP berhasil didapatkan! ` : ''}Jenjang modul berikutnya kini telah terbuka di kurikulum.`,
         xpGained: earnedXp,
-        duration: 5000
+        duration: 5500
       });
     }
 

@@ -33,7 +33,8 @@ import {
   Bot,
   Swords,
   X,
-  RotateCcw
+  RotateCcw,
+  HelpCircle
 } from 'lucide-react';
 
 interface LearningPathProps {
@@ -543,6 +544,35 @@ export const LearningPath: React.FC<LearningPathProps> = ({
                   <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 line-clamp-1">
                     <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     <span className="truncate">{material.competency}</span>
+                  </div>
+                )}
+
+                {/* Post Test Requirement & Score Status */}
+                {currentUser && (
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+                      <HelpCircle className="w-3 h-3 text-indigo-500" />
+                      Post Test:
+                    </span>
+                    {currentUser.completedQuizzes?.[material.id] ? (
+                      <span
+                        className={`font-bold px-2 py-0.5 rounded-md ${
+                          currentUser.completedQuizzes[material.id].score >= 60
+                            ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                            : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                        }`}
+                      >
+                        {currentUser.completedQuizzes[material.id].score}% ({currentUser.completedQuizzes[material.id].score >= 60 ? 'Lulus' : 'Remedial'})
+                      </span>
+                    ) : isCompleted ? (
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">Lulus</span>
+                    ) : unlocked ? (
+                      <span className="font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-1.5 py-0.5 rounded">
+                        Syarat Buka Jenjang (Min. 60%)
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 dark:text-slate-500">Terkunci</span>
+                    )}
                   </div>
                 )}
               </div>

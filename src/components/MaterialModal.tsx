@@ -21,7 +21,8 @@ import {
   Laptop,
   WifiOff,
   BookmarkCheck,
-  HardDrive
+  HardDrive,
+  HelpCircle
 } from 'lucide-react';
 
 interface MaterialModalProps {
@@ -247,19 +248,39 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({
                   </button>
                 </div>
 
-                {/* Mark Completed Button */}
+                {/* Post Test & Completion Status Controls */}
                 {currentUser && (
-                  <button
-                    onClick={() => completeMaterial(material.id)}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs ${
-                      isCompleted
-                        ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 cursor-default'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-md'
-                    }`}
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    {isCompleted ? 'Sudah Selesai (Modul Berikutnya Terbuka)' : 'Tandai Selesai & Buka Modul Berikutnya'}
-                  </button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {isCompleted ? (
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>Modul Selesai & Post Test Lulus</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          const el = document.getElementById('post-test-section');
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-xs hover:shadow-md transition-all cursor-pointer"
+                      >
+                        <HelpCircle className="w-4 h-4" />
+                        <span>Kerjakan Post Test di Bawah (Syarat Kelulusan)</span>
+                      </button>
+                    )}
+
+                    {(currentUser.role === 'admin' || currentUser.role === 'instruktur') && !isCompleted && (
+                      <button
+                        onClick={() => completeMaterial(material.id)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 transition-colors"
+                        title="Tandai selesai manual untuk Admin/Instruktur"
+                      >
+                        <span>Bypass Admin</span>
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
 
