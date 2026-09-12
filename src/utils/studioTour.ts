@@ -17,7 +17,12 @@ export const startStudioTour = (options?: StudioTourOptions): Driver => {
     } catch {
       // ignore
     }
+    activeTourInstance = null;
   }
+  // Clear any existing driver DOM artifacts
+  document.querySelectorAll('.driver-popover, .driver-overlay, svg.driver-stage').forEach(el => el.remove());
+  document.body.classList.remove('driver-active', 'driver-fade', 'driver-simple', 'driver-no-scroll');
+  document.body.style.removeProperty('--driver-animation-duration');
 
   // Ensure Scratch studio is active if requested, as it contains all standard elements
   if (options?.onRequestStudio) {
@@ -28,6 +33,7 @@ export const startStudioTour = (options?: StudioTourOptions): Driver => {
     showProgress: true,
     animate: true,
     allowClose: true,
+    skipMissingElement: true,
     overlayColor: 'rgba(15, 23, 42, 0.75)',
     stagePadding: 8,
     stageRadius: 12,
@@ -35,8 +41,18 @@ export const startStudioTour = (options?: StudioTourOptions): Driver => {
     nextBtnText: 'Lanjut →',
     prevBtnText: '← Kembali',
     doneBtnText: 'Selesai! 🎉',
-    onDestroyStarted: () => {
+    onCloseClick: (_element, _step, { driver }) => {
+      if (options?.onCancel) {
+        options.onCancel();
+      }
+      driver.destroy();
+    },
+    onDestroyed: () => {
       activeTourInstance = null;
+      // Extra safety: ensure all driver classes and remaining artifacts are cleared from DOM
+      document.querySelectorAll('.driver-popover, .driver-overlay, svg.driver-stage').forEach(el => el.remove());
+      document.body.classList.remove('driver-active', 'driver-fade', 'driver-simple', 'driver-no-scroll');
+      document.body.style.removeProperty('--driver-animation-duration');
       if (options?.onComplete) {
         options.onComplete();
       }
@@ -169,4 +185,7 @@ export const cancelStudioTour = () => {
     }
     activeTourInstance = null;
   }
+  document.querySelectorAll('.driver-popover, .driver-overlay, svg.driver-stage').forEach(el => el.remove());
+  document.body.classList.remove('driver-active', 'driver-fade', 'driver-simple', 'driver-no-scroll');
+  document.body.style.removeProperty('--driver-animation-duration');
 };
