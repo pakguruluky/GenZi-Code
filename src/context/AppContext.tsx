@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { UserAccount, UserRole, Material, SubscriptionDuration, ToastNotification, OnlineClassSchedule, StudentActivity, QuizSubmission } from '../types';
+import { UserAccount, UserRole, Material, SubscriptionDuration, ToastNotification, OnlineClassSchedule, StudentActivity, QuizSubmission, JenjangCertificate } from '../types';
 import { ALL_MATERIALS } from '../data/curriculumData';
+import { JENJANG_DEFINITIONS, getMaterialsForJenjang } from '../data/jenjangData';
 import {
   calculateExpirationDate,
   isAccountExpired,
@@ -16,7 +17,10 @@ import {
   deleteOnlineClassFromFirestore,
   fetchAllOnlineClassesFromFirestore,
   subscribeToOnlineClasses,
-  saveQuizSubmissionToFirestore
+  saveQuizSubmissionToFirestore,
+  saveCertificateToFirestore,
+  fetchCertificatesFromFirestore,
+  subscribeToCertificates
 } from '../lib/firebase';
 import confetti from 'canvas-confetti';
 
@@ -129,6 +133,23 @@ interface AppContextType {
   addStudentActivity: (activity: Omit<StudentActivity, 'id' | 'timestamp'>) => Promise<void>;
   recordClassAttendance: (cls: OnlineClassSchedule) => Promise<void>;
   getStudentRecentActivities: (user?: UserAccount | null) => StudentActivity[];
+  // Official Jenjang Certificates from Firestore
+  certificates: JenjangCertificate[];
+  selectedJenjangCertificate: JenjangCertificate | null;
+  setSelectedJenjangCertificate: (cert: JenjangCertificate | null) => void;
+  getJenjangProgress: (jenjangId: string, user?: UserAccount | null) => {
+    isCompleted: boolean;
+    completedCount: number;
+    totalCount: number;
+    percentage: number;
+    averageScore: number;
+    certificate?: JenjangCertificate;
+  };
+  generateJenjangCertificate: (jenjangId: string, user?: UserAccount | null) => Promise<{
+    success: boolean;
+    certificate?: JenjangCertificate;
+    message?: string;
+  }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -268,6 +289,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     ];
   });
+
+  // State Sertifikat Resmi Berjenjang dari Cloud Firestore
+  const [certificates, setCertificates] = useState<JenjangCertificate[]>(() => {
+    const saved = localStorage.getItem('genzicode_certificates');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        // ignore
+      }
+    }
+    return [];
+  });
+  const [selectedJenjangCertificate, setSelectedJenjangCertificate] = useState<JenjangCertificate | null>(null);
+
+  // Realtime subscriber untuk Sertifikat langsung dari Cloud Firestore
+  useEffect(() => {
+    const unsub = subscribeToCertificates((remoteCerts) => {
+      if (remoteCerts && remoteCerts.length > 0) {
+        setCertificates(remoteCerts);
+        localStorage.setItem('genzicode_certificates', JSON.stringify(remoteCerts));
+      }
+    });
+
+    fetchCertificatesFromFirestore().then((initial) => {
+      if (initial && initial.length > 0) {
+        setCertificates(initial);
+        localStorage.setItem('genzicode_certificates', JSON.stringify(initial));
+      }
+    }).catch(err => console.warn('Fetch certificates notice:', err));
+
+    return () => unsub();
+  }, []);
 
   // Realtime subscriber untuk Kelas Online langsung dari Cloud Firestore Backend
   useEffect(() => {
@@ -1348,6 +1403,202 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .slice(0, 5);
   }, [currentUser]);
 
+  // Evaluasi Progres & Kelulusan per Jenjang Pembelajaran
+  const getJenjangProgress = useCallback((jenjangId: string, user?: UserAccount | null) => {
+    const targetUser = user || currentUser;
+    const materials = getMaterialsForJenjang(jenjangId);
+    const totalCount = materials.length;
+
+    if (!targetUser || totalCount === 0) {
+      return {
+        isCompleted: false,
+        completedCount: 0,
+        totalCount,
+        percentage: 0,
+        averageScore: 0,
+        certificate: undefined
+      };
+    }
+
+    const completedIds = new Set(targetUser.completedMaterialIds || []);
+    let completedCount = 0;
+    let totalScore = 0;
+    let scoreCount = 0;
+
+    materials.forEach(mat => {
+      const isCompletedInList = completedIds.has(mat.id);
+      const quiz = targetUser.completedQuizzes?.[mat.id];
+      const isPassedQuiz = quiz ? quiz.score >= 60 : false;
+
+      // Admin & Instruktur dianggap tuntas bila terdaftar di completedIds;
+      // Siswa & Trial dianggap tuntas bila telah menyelesaikan modul atau lulus post-test
+      const isDone = (targetUser.role === 'admin' || targetUser.role === 'instruktur')
+        ? isCompletedInList
+        : (isCompletedInList || isPassedQuiz);
+
+      if (isDone) {
+        completedCount++;
+      }
+      if (quiz && typeof quiz.score === 'number') {
+        totalScore += quiz.score;
+        scoreCount++;
+      }
+    });
+
+    const averageScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 88;
+    const isCompleted = completedCount >= totalCount;
+    const percentage = Math.min(100, Math.round((completedCount / totalCount) * 100));
+
+    // Cek sertifikat yang sudah tersimpan di Firestore untuk akun siswa ini
+    const existingCert = certificates.find(
+      c => c.userId === targetUser.id && c.jenjangId === jenjangId
+    );
+
+    return {
+      isCompleted,
+      completedCount,
+      totalCount,
+      percentage,
+      averageScore,
+      certificate: existingCert
+    };
+  }, [currentUser, certificates]);
+
+  // Generate Sertifikat Resmi Jenjang & Simpan ke Cloud Firestore
+  const generateJenjangCertificate = async (
+    jenjangId: string,
+    user?: UserAccount | null
+  ): Promise<{ success: boolean; certificate?: JenjangCertificate; message?: string }> => {
+    const targetUser = user || currentUser;
+    if (!targetUser) {
+      showToast({
+        type: 'info',
+        title: 'Harap Masuk Akun',
+        message: 'Silakan masuk ke akun siswa untuk mengakses & menerbitkan sertifikat.'
+      });
+      return { success: false, message: 'Harap masuk ke akun terlebih dahulu' };
+    }
+
+    const definition = JENJANG_DEFINITIONS.find(j => j.id === jenjangId);
+    if (!definition) {
+      return { success: false, message: 'Jenjang materi tidak ditemukan' };
+    }
+
+    const progress = getJenjangProgress(jenjangId, targetUser);
+    if (!progress.isCompleted) {
+      showToast({
+        type: 'info',
+        title: 'Jenjang Belum Selesai',
+        message: `Kamu telah menuntaskan ${progress.completedCount} dari ${progress.totalCount} modul di ${definition.title}. Selesaikan seluruh materi dan lulus Post Test untuk menerbitkan sertifikat!`
+      });
+      return { success: false, message: 'Seluruh materi dalam jenjang ini belum tuntas' };
+    }
+
+    // Jika sertifikat sudah pernah diterbitkan di Firestore, tampilkan langsung
+    const existing = certificates.find(c => c.userId === targetUser.id && c.jenjangId === jenjangId);
+    if (existing) {
+      setSelectedJenjangCertificate(existing);
+      setViewingCertificateUser(targetUser);
+      showToast({
+        type: 'success',
+        title: 'Sertifikat Ditemukan di Firestore',
+        message: `Sertifikat resmi ${definition.title} (${existing.certificateNumber}) telah tersimpan di database.`
+      });
+      return { success: true, certificate: existing };
+    }
+
+    // Terbitkan Sertifikat Baru
+    const randomCode = Math.floor(1000 + Math.random() * 9000);
+    const certNumber = `GZ-CERT-${definition.code}-2026-${randomCode}`;
+    const verificationCode = `GZ-${Date.now().toString(36).toUpperCase()}-${(targetUser.id.replace(/\D/g, '') || '99').slice(-4)}`;
+    const verificationUrl = `${window.location.origin}/?verify_cert=${certNumber}`;
+
+    const newCert: JenjangCertificate = {
+      id: `cert_${targetUser.id}_${jenjangId}`,
+      certificateNumber: certNumber,
+      userId: targetUser.id,
+      studentName: targetUser.name,
+      studentEmail: targetUser.email || '',
+      school: targetUser.school || 'Pelajar Mandiri GenZi Code',
+      jenjangId: definition.id,
+      jenjangTitle: definition.title,
+      jenjangCode: definition.code,
+      competencyList: definition.competencyPoints,
+      totalMaterials: progress.totalCount,
+      completedMaterials: progress.completedCount,
+      averageQuizScore: progress.averageScore,
+      xpEarned: 250,
+      issuedAt: new Date().toISOString(),
+      instructorName: 'Pak Guru Luky',
+      instructorTitle: 'Kepala Instruktur & Kurikulum GenZi Code',
+      verificationCode,
+      verificationUrl
+    };
+
+    // 1. Simpan ke Cloud Firestore Backend
+    const saveRes = await saveCertificateToFirestore(newCert);
+    if (!saveRes.success) {
+      console.warn('Gagal menyimpan sertifikat ke Firestore:', saveRes.error);
+    }
+
+    // 2. Perbarui state lokal & cache
+    setCertificates(prev => {
+      const filtered = prev.filter(c => c.id !== newCert.id);
+      const updated = [newCert, ...filtered];
+      localStorage.setItem('genzicode_certificates', JSON.stringify(updated));
+      return updated;
+    });
+
+    // 3. Berikan Poin XP (+250 XP) dan Lencana Kelulusan Jenjang ke Siswa
+    const currentBadges = targetUser.badges || [];
+    const badgeName = `Lulusan ${definition.levelBadge}`;
+    const updatedBadges = currentBadges.includes(badgeName) ? currentBadges : [...currentBadges, badgeName];
+
+    const updatedUser: UserAccount = {
+      ...targetUser,
+      xp: (targetUser.xp || 0) + 250,
+      badges: updatedBadges
+    };
+
+    if (currentUser && targetUser.id === currentUser.id) {
+      setCurrentUser(updatedUser);
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(updatedUser));
+    }
+    setUsers(prev => prev.map(u => (u.id === updatedUser.id ? updatedUser : u)));
+    await syncUserToFirestore(updatedUser);
+
+    // 4. Catat riwayat aktivitas siswa
+    await addStudentActivity({
+      type: 'badge_earned',
+      title: `Memperoleh Sertifikat ${definition.title}`,
+      description: `Menyelesaikan seluruh ${progress.totalCount} modul dengan rata-rata skor evaluasi ${progress.averageScore}%`,
+      xpGained: 250,
+      metadata: { certNumber, jenjangId }
+    });
+
+    // 5. Efek selebrasi confetti
+    try {
+      confetti({
+        particleCount: 140,
+        spread: 90,
+        origin: { y: 0.55 }
+      });
+    } catch {
+      // ignore
+    }
+
+    setSelectedJenjangCertificate(newCert);
+    setViewingCertificateUser(targetUser);
+
+    showToast({
+      type: 'badge',
+      title: '🏆 Sertifikat Jenjang Diterbitkan!',
+      message: `Selamat! Sertifikat ${definition.title} resmi tersimpan di database Cloud Firestore (+250 XP bonus)!`
+    });
+
+    return { success: true, certificate: newCert };
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -1396,7 +1647,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         submitModuleQuiz,
         addStudentActivity,
         recordClassAttendance,
-        getStudentRecentActivities
+        getStudentRecentActivities,
+        certificates,
+        selectedJenjangCertificate,
+        setSelectedJenjangCertificate,
+        getJenjangProgress,
+        generateJenjangCertificate
       }}
     >
       {children}

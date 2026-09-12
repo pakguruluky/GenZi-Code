@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ALL_MATERIALS } from '../data/curriculumData';
+import { JENJANG_DEFINITIONS } from '../data/jenjangData';
 
 interface StudentProfileModalProps {
   isOpen: boolean;
@@ -33,7 +34,10 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ isOpen
     currentUser,
     getCompletionPercentage,
     setViewingCertificateUser,
-    setViewingReportUser
+    setViewingReportUser,
+    getJenjangProgress,
+    generateJenjangCertificate,
+    setSelectedJenjangCertificate
   } = useApp();
 
   if (!isOpen || !currentUser) return null;
@@ -418,6 +422,98 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ isOpen
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Jenjang Certificates & Firestore Persistence Section */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Award className="w-4 h-4 text-amber-500" />
+                Sertifikat Kelulusan Jenjang (Cloud Firestore)
+              </h3>
+              <span className="text-xs text-slate-500">
+                {JENJANG_DEFINITIONS.filter(j => !!getJenjangProgress(j.id, currentUser).certificate).length} dari {JENJANG_DEFINITIONS.length} Diterbitkan
+              </span>
+            </div>
+
+            <div className="space-y-2.5">
+              {JENJANG_DEFINITIONS.map(jenjang => {
+                const prog = getJenjangProgress(jenjang.id, currentUser);
+                const hasCert = !!prog.certificate;
+
+                return (
+                  <div
+                    key={jenjang.id}
+                    className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-all ${
+                      hasCert
+                        ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800'
+                        : prog.isCompleted
+                        ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800'
+                        : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase border ${jenjang.badgeBg}`}>
+                          {jenjang.levelBadge}
+                        </span>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                          {jenjang.title}
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span>{prog.completedCount}/{prog.totalCount} Modul ({prog.percentage}%)</span>
+                        <span>•</span>
+                        <span>Skor: {prog.averageScore}%</span>
+                        {hasCert && (
+                          <>
+                            <span>•</span>
+                            <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                              {prog.certificate?.certificateNumber}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
+                      {hasCert ? (
+                        <button
+                          onClick={() => {
+                            setSelectedJenjangCertificate(prog.certificate!);
+                            onClose();
+                            setViewingCertificateUser(currentUser);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Lihat Sertifikat</span>
+                        </button>
+                      ) : prog.isCompleted ? (
+                        <button
+                          onClick={async () => {
+                            const res = await generateJenjangCertificate(jenjang.id, currentUser);
+                            if (res.success && res.certificate) {
+                              setSelectedJenjangCertificate(res.certificate);
+                              onClose();
+                              setViewingCertificateUser(currentUser);
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs flex items-center gap-1 shadow-xs animate-pulse"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Generate Sertifikat</span>
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 font-semibold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                          {prog.totalCount - prog.completedCount} Modul Tersisa
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

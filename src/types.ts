@@ -67,6 +67,8 @@ export interface StudentActivity {
     score?: number;
     classId?: string;
     platform?: string;
+    certNumber?: string;
+    jenjangId?: string;
   };
 }
 
@@ -153,5 +155,42 @@ export interface ToastNotification {
   moduleName?: string;
   xpGained?: number;
   duration?: number;
+}
+
+export interface JenjangDefinition {
+  id: string;
+  code: string;
+  title: string;
+  subtitle: string;
+  category: MaterialCategory | 'All' | 'Multi';
+  levelBadge: string;
+  description: string;
+  competencyPoints: string[];
+  iconName: string;
+  gradient: string;
+  badgeBg: string;
+  borderColor: string;
+}
+
+export interface JenjangCertificate {
+  id: string;
+  certificateNumber: string;
+  userId: string;
+  studentName: string;
+  studentEmail?: string;
+  school?: string;
+  jenjangId: string;
+  jenjangTitle: string;
+  jenjangCode: string;
+  competencyList: string[];
+  totalMaterials: number;
+  completedMaterials: number;
+  averageQuizScore: number;
+  xpEarned: number;
+  issuedAt: string;
+  instructorName: string;
+  instructorTitle: string;
+  verificationCode: string;
+  verificationUrl?: string;
 }
 

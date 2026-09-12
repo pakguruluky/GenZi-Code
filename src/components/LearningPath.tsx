@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ALL_MATERIALS } from '../data/curriculumData';
 import { Material, MaterialCategory } from '../types';
+import { JENJANG_DEFINITIONS } from '../data/jenjangData';
 import { useApp } from '../context/AppContext';
 import {
   useNetworkStatus,
@@ -52,13 +53,17 @@ export const LearningPath: React.FC<LearningPathProps> = ({
     canAccessMaterial,
     getCompletionPercentage,
     setViewingCertificateUser,
-    setViewingReportUser
+    setViewingReportUser,
+    getJenjangProgress,
+    generateJenjangCertificate,
+    setSelectedJenjangCertificate
   } = useApp();
 
   const isOnline = useNetworkStatus();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showJenjangHub, setShowJenjangHub] = useState(true);
 
   const completionPercent = getCompletionPercentage(currentUser);
   const completedCount = currentUser?.completedMaterialIds?.length || 0;
@@ -430,6 +435,148 @@ export const LearningPath: React.FC<LearningPathProps> = ({
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Pusat Sertifikat Kelulusan Jenjang (Firestore Database) */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xs mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Award className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  Sertifikat Kelulusan Jenjang
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                  Cloud Firestore
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Selesaikan seluruh materi per jenjang & lulus Post Test (skor ≥ 60%) untuk mengunduh sertifikat resmi.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowJenjangHub(prev => !prev)}
+            className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline self-start sm:self-center"
+          >
+            {showJenjangHub ? 'Sembunyikan' : 'Tampilkan Jenjang'}
+          </button>
+        </div>
+
+        {showJenjangHub && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
+            {JENJANG_DEFINITIONS.map(jenjang => {
+              const prog = getJenjangProgress(jenjang.id, currentUser);
+              const hasCert = !!prog.certificate;
+
+              return (
+                <div
+                  key={jenjang.id}
+                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                    hasCert
+                      ? 'border-emerald-300 dark:border-emerald-800/80 bg-gradient-to-br from-white to-emerald-50/20 dark:from-slate-900 dark:to-emerald-950/20 shadow-xs'
+                      : prog.isCompleted
+                      ? 'border-amber-300 dark:border-amber-700/80 bg-gradient-to-br from-white to-amber-50/20 dark:from-slate-900 dark:to-amber-950/20 shadow-xs'
+                      : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase border ${jenjang.badgeBg}`}>
+                        {jenjang.levelBadge}
+                      </span>
+                      {hasCert ? (
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Terbit
+                        </span>
+                      ) : prog.isCompleted ? (
+                        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          Siap Generate
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold text-slate-400">
+                          {prog.totalCount - prog.completedCount} tersisa
+                        </span>
+                      )}
+                    </div>
+
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">
+                      {jenjang.title}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
+                      {jenjang.subtitle}
+                    </p>
+
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-[11px] mb-1">
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">
+                          {prog.completedCount} / {prog.totalCount} Modul
+                        </span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {prog.percentage}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 bg-gradient-to-r ${jenjang.gradient}`}
+                          style={{ width: `${prog.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400">
+                      Rata-rata: <strong className="text-slate-600 dark:text-slate-300">{prog.averageScore}%</strong>
+                    </span>
+
+                    {hasCert ? (
+                      <button
+                        onClick={() => {
+                          setSelectedJenjangCertificate(prog.certificate!);
+                          setViewingCertificateUser(currentUser);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-xs"
+                      >
+                        <Award className="w-3 h-3" />
+                        <span>Lihat Sertifikat</span>
+                      </button>
+                    ) : prog.isCompleted ? (
+                      <button
+                        onClick={async () => {
+                          const res = await generateJenjangCertificate(jenjang.id, currentUser);
+                          if (res.success && res.certificate) {
+                            setSelectedJenjangCertificate(res.certificate);
+                            setViewingCertificateUser(currentUser);
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white font-extrabold text-[11px] flex items-center gap-1 shadow-xs animate-pulse"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Generate (+250 XP)</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setViewingCertificateUser(currentUser);
+                        }}
+                        className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-semibold text-[10px] flex items-center gap-1"
+                      >
+                        <span>Cek Syarat</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Empty State when no results found */}

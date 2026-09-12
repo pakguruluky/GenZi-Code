@@ -83,6 +83,33 @@
         "submittedAt": { "type": "string" }
       },
       "required": ["id", "userId", "materialId", "score", "passed"]
+    },
+    "JenjangCertificate": {
+      "title": "JenjangCertificate",
+      "description": "Official graduation certificate issued upon completing all materials in a jenjang",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "certificateNumber": { "type": "string" },
+        "userId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentEmail": { "type": "string" },
+        "school": { "type": "string" },
+        "jenjangId": { "type": "string" },
+        "jenjangTitle": { "type": "string" },
+        "jenjangCode": { "type": "string" },
+        "competencyList": { "type": "array" },
+        "totalMaterials": { "type": "number" },
+        "completedMaterials": { "type": "number" },
+        "averageQuizScore": { "type": "number" },
+        "xpEarned": { "type": "number" },
+        "issuedAt": { "type": "string" },
+        "instructorName": { "type": "string" },
+        "instructorTitle": { "type": "string" },
+        "verificationCode": { "type": "string" },
+        "verificationUrl": { "type": "string" }
+      },
+      "required": ["id", "certificateNumber", "userId", "studentName", "jenjangId", "jenjangTitle", "issuedAt"]
     }
   },
   "firestore": {
@@ -101,6 +128,10 @@
     "/genzi_quiz_submissions/{submissionId}": {
       "schema": "QuizSubmission",
       "description": "Historical records of student post-test attempts and results"
+    },
+    "/genzi_certificates/{certificateId}": {
+      "schema": "JenjangCertificate",
+      "description": "Official verifiable completion certificates issued for each jenjang"
     }
   }
 }

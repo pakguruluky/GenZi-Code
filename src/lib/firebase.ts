@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import firebaseAppletConfig from '../../firebase-applet-config.json';
-import { UserAccount, OnlineClassSchedule, QuizSubmission } from '../types';
+import { UserAccount, OnlineClassSchedule, QuizSubmission, JenjangCertificate } from '../types';
 
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseAppletConfig.apiKey,
@@ -426,4 +426,87 @@ export async function fetchQuizSubmissionsFromFirestore(userId?: string): Promis
     return [];
   }
 }
+
+const CERTIFICATES_COLLECTION = 'genzi_certificates';
+
+/**
+ * Save or update an issued certificate in Firestore
+ */
+export async function saveCertificateToFirestore(cert: JenjangCertificate): Promise<{ success: boolean; error?: string }> {
+  if (!db) {
+    return { success: false, error: 'Database belum terinisialisasi' };
+  }
+  try {
+    const certRef = doc(db, CERTIFICATES_COLLECTION, cert.id);
+    const cleaned = sanitizeForFirestore({
+      ...cert,
+      updatedAt: new Date().toISOString()
+    });
+    await setDoc(certRef, cleaned, { merge: true });
+    console.log('[Firestore] Sertifikat resmi tersimpan di Firestore:', cert.certificateNumber, cert.jenjangTitle);
+    return { success: true };
+  } catch (error: any) {
+    if (error?.code === 'permission-denied') {
+      handleFirestoreError(error, OperationType.WRITE, CERTIFICATES_COLLECTION);
+    }
+    console.error('[Firestore] Gagal menyimpan sertifikat ke Firestore:', error);
+    return { success: false, error: error?.message || 'Gagal menyimpan sertifikat ke Firestore' };
+  }
+}
+
+/**
+ * Fetch issued certificates from Firestore, optionally filtered by student userId
+ */
+export async function fetchCertificatesFromFirestore(userId?: string): Promise<JenjangCertificate[]> {
+  if (!db) return [];
+  try {
+    const snapshot = await getDocs(collection(db, CERTIFICATES_COLLECTION));
+    if (snapshot.empty) return [];
+    const list = snapshot.docs.map(d => d.data() as JenjangCertificate);
+    if (userId) {
+      return list.filter(c => c.userId === userId);
+    }
+    return list;
+  } catch (error: any) {
+    if (error?.code === 'permission-denied') {
+      handleFirestoreError(error, OperationType.LIST, CERTIFICATES_COLLECTION);
+    }
+    console.warn('[Firestore] Error fetch certificates:', error);
+    return [];
+  }
+}
+
+/**
+ * Real-time subscription to certificates
+ */
+export function subscribeToCertificates(callback: (certs: JenjangCertificate[]) => void, userId?: string): () => void {
+  if (!db) {
+    callback([]);
+    return () => {};
+  }
+  try {
+    const colRef = collection(db, CERTIFICATES_COLLECTION);
+    const unsub = onSnapshot(colRef, (snapshot) => {
+      const items: JenjangCertificate[] = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data() as JenjangCertificate;
+        if (!userId || data.userId === userId) {
+          items.push(data);
+        }
+      });
+      callback(items);
+    }, (error) => {
+      if (error?.code === 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, CERTIFICATES_COLLECTION);
+      }
+      console.warn('[Firestore] Snapshot error certificates:', error);
+      callback([]);
+    });
+    return unsub;
+  } catch (err) {
+    console.warn('Failed to subscribe to certificates:', err);
+    return () => {};
+  }
+}
+
 
