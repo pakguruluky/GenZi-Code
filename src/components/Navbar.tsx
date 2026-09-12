@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Code,
@@ -21,7 +21,8 @@ import {
   Trophy,
   Zap,
   User,
-  Video
+  Video,
+  MoreHorizontal
 } from 'lucide-react';
 import { StudentProfileModal } from './StudentProfileModal';
 
@@ -50,42 +51,60 @@ export const Navbar: React.FC<NavbarProps> = ({
     setViewingReportUser
   } = useApp();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
-  const getRoleBadge = () => {
+  const roleMenuRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (roleMenuRef.current && !roleMenuRef.current.contains(e.target as Node)) {
+        setShowRoleMenu(false);
+      }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const getRoleBadge = (isCompact = false) => {
     if (!currentUser) return null;
     switch (currentUser.role) {
       case 'admin':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+          <span className={`inline-flex items-center gap-1 font-bold rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 ${isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2.5 py-0.5 text-[11px]'}`}>
             <ShieldAlert className="w-3 h-3" />
-            Admin (Superuser)
+            <span>{isCompact ? 'Admin' : 'Admin (Superuser)'}</span>
           </span>
         );
       case 'instruktur':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+          <span className={`inline-flex items-center gap-1 font-bold rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 ${isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2.5 py-0.5 text-[11px]'}`}>
             <GraduationCap className="w-3 h-3" />
-            Instruktur
+            <span>Instruktur</span>
           </span>
         );
       case 'siswa':
         return currentUser.status === 'active' ? (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+          <span className={`inline-flex items-center gap-1 font-bold rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 ${isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2.5 py-0.5 text-[11px]'}`}>
             <UserCheck className="w-3 h-3" />
-            Siswa Aktif
+            <span>{isCompact ? 'Siswa' : 'Siswa Aktif'}</span>
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-yellow-100 dark:bg-yellow-950/60 text-yellow-800 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700 animate-pulse">
+          <span className={`inline-flex items-center gap-1 font-bold rounded-full bg-yellow-100 dark:bg-yellow-950/60 text-yellow-800 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700 animate-pulse ${isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2.5 py-0.5 text-[11px]'}`}>
             <UserX className="w-3 h-3" />
-            Menunggu Approval
+            <span>{isCompact ? 'Pending' : 'Menunggu Approval'}</span>
           </span>
         );
       case 'trial':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+          <span className={`inline-flex items-center gap-1 font-bold rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800 ${isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2.5 py-0.5 text-[11px]'}`}>
             <Sparkles className="w-3 h-3" />
-            Trial (1x / 1 Modul)
+            <span>{isCompact ? 'Trial' : 'Trial (1x / 1 Modul)'}</span>
           </span>
         );
       default:
@@ -94,38 +113,56 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const pendingCount = users.filter(u => u.status === 'pending').length;
+  const isSecondaryActive = currentTab === 'kelas_online' || currentTab === 'admin' || currentTab === 'instruktur' || currentTab === 'sheets';
+  const hasMoreNotification = onlineClasses.some(c => c.status === 'ongoing') || (currentUser?.role === 'admin' && pendingCount > 0);
+
+  const getSecondaryLabel = () => {
+    switch (currentTab) {
+      case 'kelas_online':
+        return 'Kelas Online';
+      case 'admin':
+        return 'Panel Admin';
+      case 'instruktur':
+        return 'Instruktur';
+      case 'sheets':
+        return 'Database';
+      default:
+        return 'Lainnya';
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-3">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex items-center justify-between h-16 gap-2 sm:gap-3">
           {/* Logo Brand */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0">
             <button
               onClick={() => setCurrentTab('home')}
-              className="flex items-center gap-2.5 text-left group"
+              className="flex items-center gap-2 sm:gap-2.5 text-left group"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 dark:shadow-indigo-950 group-hover:scale-105 transition-transform">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 dark:shadow-indigo-950 group-hover:scale-105 transition-transform shrink-0">
                 <Code className="w-5 h-5 font-bold" />
               </div>
-              <div>
+              <div className="shrink-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xl font-black tracking-tight bg-gradient-to-r from-indigo-900 via-blue-800 to-indigo-600 dark:from-indigo-300 dark:via-blue-300 dark:to-cyan-200 bg-clip-text text-transparent">
+                  <span className="text-lg sm:text-xl font-black tracking-tight bg-gradient-to-r from-indigo-900 via-blue-800 to-indigo-600 dark:from-indigo-300 dark:via-blue-300 dark:to-cyan-200 bg-clip-text text-transparent">
                     GenZi Code
                   </span>
                   <span className="text-[10px] px-1.5 py-0.5 font-bold tracking-wide uppercase bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 rounded border border-indigo-200 dark:border-indigo-800">
                     AI EdTech
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden xl:block">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden 2xl:block">
                   Belajar Coding & AI Mandiri Berjenjang
                 </p>
               </div>
             </button>
           </div>
 
-          {/* Center Navigation */}
-          <nav className="hidden md:flex items-center gap-1 lg:gap-1.5">
+          {/* Center Navigation Tabs (Responsive) */}
+          <nav className="hidden md:flex items-center gap-1 lg:gap-1.5 min-w-0">
+            {/* Beranda */}
             <button
               onClick={() => setCurrentTab('home')}
               className={`px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
@@ -138,9 +175,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Beranda</span>
             </button>
 
-            {/* Materi, 4 Studio Coding, dan Leaderboard HANYA MUNCUL SETELAH LOGIN */}
             {currentUser && (
               <>
+                {/* Materi */}
                 <button
                   onClick={() => setCurrentTab('materi')}
                   className={`px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
@@ -150,9 +187,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <Layers className="w-4 h-4 shrink-0" />
-                  <span>Materi<span className="hidden xl:inline"> Berjenjang</span></span>
+                  <span>Materi<span className="hidden 2xl:inline"> Berjenjang</span></span>
                 </button>
 
+                {/* 4 Studio Coding */}
                 <button
                   onClick={() => setCurrentTab('studios')}
                   className={`px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
@@ -162,10 +200,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <Laptop className="w-4 h-4 shrink-0" />
-                  <span>4 Studio<span className="hidden xl:inline"> Coding</span></span>
+                  <span>4 Studio<span className="hidden 2xl:inline"> Coding</span></span>
                 </button>
 
-                {/* Leaderboard Button */}
+                {/* Leaderboard */}
                 <button
                   onClick={() => setCurrentTab('leaderboard')}
                   className={`px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
@@ -178,10 +216,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span>Leaderboard</span>
                 </button>
 
-                {/* Kelas Online Zoom / Google Meet */}
+                {/* DIRECT TABS ON XL SCREENS (>= 1280px) */}
+                {/* Kelas Online (Direct on XL+) */}
                 <button
                   onClick={() => setCurrentTab('kelas_online')}
-                  className={`px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
+                  className={`hidden xl:flex px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors items-center gap-1.5 shrink-0 ${
                     currentTab === 'kelas_online'
                       ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700 shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -193,57 +232,164 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0" />
                   )}
                 </button>
+
+                {/* Admin / Instruktur Panel (Direct on XL+) */}
+                {(currentUser?.role === 'admin' || currentUser?.role === 'instruktur') && (
+                  <button
+                    onClick={() => setCurrentTab(currentUser?.role === 'admin' ? 'admin' : 'instruktur')}
+                    className={`hidden xl:flex relative px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors items-center gap-1.5 shrink-0 ${
+                      currentTab === 'admin' || currentTab === 'instruktur'
+                        ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {currentUser?.role === 'admin' ? (
+                      <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                    ) : (
+                      <GraduationCap className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    )}
+                    <span><span className="hidden 2xl:inline">Panel </span>{currentUser?.role === 'admin' ? 'Admin' : 'Instruktur'}</span>
+                    {currentUser?.role === 'admin' && pendingCount > 0 && (
+                      <span className="w-4 h-4 flex items-center justify-center rounded-full bg-rose-600 text-white text-[9px] font-bold shrink-0">
+                        {pendingCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+
+                {/* Tabel Database (Direct on XL+) */}
+                {currentUser?.role === 'admin' && (
+                  <button
+                    onClick={() => setCurrentTab('sheets')}
+                    title="Tabel Database Pengguna & Siswa (Khusus Admin)"
+                    className={`hidden xl:flex px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors items-center gap-1.5 shrink-0 ${
+                      currentTab === 'sheets'
+                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <Table className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                    <span><span className="hidden 2xl:inline">Tabel </span>Database</span>
+                  </button>
+                )}
+
+                {/* ADAPTIVE "LAINNYA" DROPDOWN MENU FOR MEDIUM & LAPTOP SCREENS (< 1280px) */}
+                <div className="relative xl:hidden" ref={moreMenuRef}>
+                  <button
+                    onClick={() => setShowMoreMenu(prev => !prev)}
+                    className={`relative px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                      isSecondaryActive
+                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {isSecondaryActive ? (
+                      <>
+                        {currentTab === 'kelas_online' && <Video className="w-3.5 h-3.5 text-blue-500 shrink-0" />}
+                        {currentTab === 'admin' && <ShieldAlert className="w-3.5 h-3.5 text-rose-500 shrink-0" />}
+                        {currentTab === 'instruktur' && <GraduationCap className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+                        {currentTab === 'sheets' && <Table className="w-3.5 h-3.5 text-indigo-500 shrink-0" />}
+                        <span className="font-bold">{getSecondaryLabel()}</span>
+                      </>
+                    ) : (
+                      <>
+                        <MoreHorizontal className="w-4 h-4 shrink-0" />
+                        <span>Lainnya</span>
+                      </>
+                    )}
+                    <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${showMoreMenu ? 'rotate-180' : ''}`} />
+
+                    {/* Notification indicator dot */}
+                    {hasMoreNotification && (
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping absolute -top-0.5 -right-0.5" />
+                    )}
+                  </button>
+
+                  {/* Dropdown Menu Popup */}
+                  {showMoreMenu && (
+                    <div
+                      className="absolute left-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150"
+                      onClick={() => setShowMoreMenu(false)}
+                    >
+                      <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                        Menu Tambahan
+                      </div>
+
+                      {/* Kelas Online */}
+                      <button
+                        onClick={() => setCurrentTab('kelas_online')}
+                        className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors ${
+                          currentTab === 'kelas_online' ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-50/60 dark:bg-blue-950/40' : 'text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Video className="w-4 h-4 text-blue-500" />
+                          <span>Kelas Online</span>
+                        </div>
+                        {onlineClasses.some(c => c.status === 'ongoing') && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] bg-rose-500 text-white font-bold animate-pulse">
+                            LIVE
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Admin / Instruktur Panel */}
+                      {(currentUser?.role === 'admin' || currentUser?.role === 'instruktur') && (
+                        <button
+                          onClick={() => setCurrentTab(currentUser?.role === 'admin' ? 'admin' : 'instruktur')}
+                          className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors ${
+                            currentTab === 'admin' || currentTab === 'instruktur'
+                              ? 'font-bold text-rose-600 dark:text-rose-400 bg-rose-50/60 dark:bg-rose-950/40'
+                              : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {currentUser?.role === 'admin' ? (
+                              <ShieldAlert className="w-4 h-4 text-rose-500" />
+                            ) : (
+                              <GraduationCap className="w-4 h-4 text-amber-500" />
+                            )}
+                            <span>Panel {currentUser?.role === 'admin' ? 'Admin' : 'Instruktur'}</span>
+                          </div>
+                          {currentUser?.role === 'admin' && pendingCount > 0 && (
+                            <span className="w-4 h-4 flex items-center justify-center rounded-full bg-rose-600 text-white text-[9px] font-bold">
+                              {pendingCount}
+                            </span>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Tabel Database (Admin) */}
+                      {currentUser?.role === 'admin' && (
+                        <button
+                          onClick={() => setCurrentTab('sheets')}
+                          className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors ${
+                            currentTab === 'sheets'
+                              ? 'font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/40'
+                              : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Table className="w-4 h-4 text-indigo-500" />
+                            <span>Tabel Database</span>
+                          </div>
+                          <span className="text-[9px] font-bold text-indigo-500 uppercase">Admin</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </>
-            )}
-
-            {/* Admin or Instructor View */}
-            {(currentUser?.role === 'admin' || currentUser?.role === 'instruktur') && (
-              <button
-                onClick={() => setCurrentTab(currentUser?.role === 'admin' ? 'admin' : 'instruktur')}
-                className={`relative px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
-                  currentTab === 'admin' || currentTab === 'instruktur'
-                    ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                {currentUser?.role === 'admin' ? (
-                  <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
-                ) : (
-                  <GraduationCap className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                )}
-                <span><span className="hidden xl:inline">Panel </span>{currentUser?.role === 'admin' ? 'Admin' : 'Instruktur'}</span>
-                {currentUser?.role === 'admin' && pendingCount > 0 && (
-                  <span className="w-4 h-4 flex items-center justify-center rounded-full bg-rose-600 text-white text-[9px] font-bold shrink-0">
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-            )}
-
-            {/* In-App Database Table View: RESTRICTED ONLY FOR ADMIN */}
-            {currentUser?.role === 'admin' && (
-              <button
-                onClick={() => setCurrentTab('sheets')}
-                title="Tabel Database Pengguna & Siswa (Khusus Admin)"
-                className={`px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl text-xs lg:text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
-                  currentTab === 'sheets'
-                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <Table className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                <span><span className="hidden xl:inline">Tabel </span>Database</span>
-              </button>
             )}
           </nav>
 
           {/* Right Action & User Profile & Theme Toggle */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Dark/Light Mode Switcher */}
             <button
               onClick={toggleDarkMode}
               title={darkMode ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
-              className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shrink-0 cursor-pointer"
               aria-label="Toggle Theme"
             >
               {darkMode ? (
@@ -254,11 +400,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {currentUser ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 {/* Gamification XP Pill Badge */}
                 <button
                   onClick={() => setShowProfileModal(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-300/80 dark:border-amber-700/80 text-amber-700 dark:text-amber-300 font-black text-xs transition-all shadow-xs group"
+                  className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-300/80 dark:border-amber-700/80 text-amber-700 dark:text-amber-300 font-black text-xs transition-all shadow-xs group shrink-0 cursor-pointer"
                   title="Klik untuk melihat Profil Siswa, Level & Akumulasi XP"
                 >
                   <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 group-hover:scale-110 transition-transform animate-pulse" />
@@ -266,23 +412,24 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">XP</span>
                 </button>
 
-                <div className="relative">
+                {/* Profile Pill & Dropdown */}
+                <div className="relative shrink-0" ref={roleMenuRef}>
                   <button
                     onClick={() => setShowRoleMenu(!showRoleMenu)}
-                    className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors"
+                    className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer"
                   >
                     <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0">
                       {currentUser.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="text-left hidden lg:block">
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1 max-w-[100px] xl:max-w-[140px]">
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1 max-w-[80px] xl:max-w-[120px]">
                         {currentUser.name}
                       </p>
-                      <div className="flex items-center gap-1">
-                        {getRoleBadge()}
+                      <div className="hidden 2xl:block mt-0.5">
+                        {getRoleBadge(true)}
                       </div>
                     </div>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   </button>
 
                   {/* Dropdown switch & Action Menu */}
@@ -292,9 +439,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                       onClick={() => setShowRoleMenu(false)}
                     >
                       <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
-                        <p className="font-bold text-slate-900 dark:text-white">{currentUser.name}</p>
-                        <p className="text-slate-500 dark:text-slate-400 text-[11px] truncate">{currentUser.email}</p>
-                        <div className="mt-1 flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-bold text-slate-900 dark:text-white truncate">{currentUser.name}</p>
+                          {getRoleBadge(false)}
+                        </div>
+                        <p className="text-slate-500 dark:text-slate-400 text-[11px] truncate mt-0.5">{currentUser.email}</p>
+                        <div className="mt-2 flex items-center justify-between pt-1.5 border-t border-slate-100 dark:border-slate-800/60">
                           <span className="text-slate-500 dark:text-slate-400">Progress Belajar:</span>
                           <span className="font-bold text-indigo-600 dark:text-indigo-400">
                             {getCompletionPercentage(currentUser)}%
@@ -306,7 +456,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <div className="p-2 border-b border-slate-100 dark:border-slate-800 space-y-1">
                         <button
                           onClick={() => setShowProfileModal(true)}
-                          className="w-full text-left px-2.5 py-1.5 rounded-lg text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center justify-between font-semibold"
+                          className="w-full text-left px-2.5 py-1.5 rounded-lg text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center justify-between font-semibold cursor-pointer"
                         >
                           <div className="flex items-center gap-2">
                             <User className="w-4 h-4 text-indigo-500" />
@@ -319,14 +469,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                         <button
                           onClick={() => setViewingCertificateUser(currentUser)}
-                          className="w-full text-left px-2.5 py-1.5 rounded-lg text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center gap-2 font-semibold"
+                          className="w-full text-left px-2.5 py-1.5 rounded-lg text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center gap-2 font-semibold cursor-pointer"
                         >
                           <Award className="w-4 h-4 text-amber-500" />
                           <span>Lihat Sertifikat Digital Saya</span>
                         </button>
                         <button
                           onClick={() => setViewingReportUser(currentUser)}
-                          className="w-full text-left px-2.5 py-1.5 rounded-lg text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center gap-2 font-semibold"
+                          className="w-full text-left px-2.5 py-1.5 rounded-lg text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center gap-2 font-semibold cursor-pointer"
                         >
                           <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
                           <span>Buka Rapor Belajar (HTML)</span>
@@ -344,7 +494,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                               setCurrentTab('home');
                             }
                           }}
-                          className="w-full text-left px-3 py-2 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 font-medium"
+                          className="w-full text-left px-3 py-2 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 font-medium cursor-pointer"
                         >
                           <LogOut className="w-3.5 h-3.5" />
                           Keluar (Logout)
@@ -355,16 +505,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => onOpenAuth('trial')}
-                  className="px-3 py-1.5 text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-xl border border-purple-200 dark:border-purple-800 transition-colors"
+                  className="px-3 py-1.5 text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-xl border border-purple-200 dark:border-purple-800 transition-colors cursor-pointer"
                 >
                   Coba Trial (1x)
                 </button>
                 <button
                   onClick={() => onOpenAuth('login')}
-                  className="px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   Masuk / Daftar
@@ -375,12 +525,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Tab Bar - HANYA MUNCUL JIKA SUDAH LOGIN */}
+      {/* Mobile Tab Bar - HANYA MUNCUL JIKA SUDAH LOGIN (< 768px) */}
       {currentUser && (
         <div className="md:hidden flex items-center overflow-x-auto whitespace-nowrap gap-1.5 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur px-2.5 py-2 text-xs font-semibold scrollbar-none shadow-xs">
           <button
             onClick={() => setCurrentTab('home')}
-            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
+            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all cursor-pointer ${
               currentTab === 'home'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -391,7 +541,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
           <button
             onClick={() => setCurrentTab('materi')}
-            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
+            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all cursor-pointer ${
               currentTab === 'materi'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -402,7 +552,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
           <button
             onClick={() => setCurrentTab('studios')}
-            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
+            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all cursor-pointer ${
               currentTab === 'studios'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -413,7 +563,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
           <button
             onClick={() => setCurrentTab('leaderboard')}
-            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
+            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all cursor-pointer ${
               currentTab === 'leaderboard'
                 ? 'bg-amber-500 text-white font-bold shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -424,7 +574,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
           <button
             onClick={() => setCurrentTab('kelas_online')}
-            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
+            className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all cursor-pointer ${
               currentTab === 'kelas_online'
                 ? 'bg-blue-600 text-white font-bold shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -436,7 +586,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {(currentUser.role === 'admin' || currentUser.role === 'instruktur') && (
             <button
               onClick={() => setCurrentTab(currentUser.role === 'admin' ? 'admin' : 'instruktur')}
-              className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
+              className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all cursor-pointer ${
                 currentTab === 'admin' || currentTab === 'instruktur'
                   ? 'bg-rose-600 text-white font-bold shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -459,7 +609,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {currentUser.role === 'admin' && (
             <button
               onClick={() => setCurrentTab('sheets')}
-              className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all ${
+              className={`min-h-[38px] px-3 py-1.5 shrink-0 flex items-center gap-1.5 rounded-xl transition-all cursor-pointer ${
                 currentTab === 'sheets'
                   ? 'bg-indigo-600 text-white font-bold shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
