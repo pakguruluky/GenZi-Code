@@ -49,7 +49,8 @@ function MainLayout() {
     viewingCertificateUser,
     setViewingCertificateUser,
     viewingReportUser,
-    setViewingReportUser
+    setViewingReportUser,
+    setSelectedJenjangCertificate
   } = useApp();
 
   const [currentTab, setCurrentTab] = useState<TabType>('home');
@@ -269,7 +270,10 @@ function MainLayout() {
       {/* Digital Certificate Modal */}
       <CertificateModal
         user={viewingCertificateUser}
-        onClose={() => setViewingCertificateUser(null)}
+        onClose={() => {
+          setViewingCertificateUser(null);
+          setSelectedJenjangCertificate(null);
+        }}
       />
 
       {/* HTML Student Progress Report Modal */}
